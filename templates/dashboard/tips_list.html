@@ -1,0 +1,71 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Kelola Tips — Dashboard SkyWise AI{% endblock %}
+{% block topbar_title %}Kelola Tips Cuaca{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-btn { padding:8px 16px; border-radius:8px; background:#f1f5f9; color:#334155; text-decoration:none; font-size:.85rem; font-weight:600; }
+.page-btn:hover { background:#e2e8f0; }
+.page-info { display:flex; align-items:center; font-size:.85rem; color:#64748b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <h2 style="font-size:1.1rem;font-weight:800;">💡 Daftar Tips Cuaca</h2>
+  <a href="{% url 'tips_create' %}" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Tambah Tips</a>
+</div>
+<div class="action-bar">
+  <form method="GET" style="display:flex;gap:10px;flex:1;">
+    <div class="search-wrap" style="flex:1;max-width:360px;">
+      <i class="fa fa-search"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Cari judul tips...">
+    </div>
+    <button type="submit" class="btn btn-outline btn-sm">Cari</button>
+    {% if q %}<a href="{% url 'tips_list_dashboard' %}" class="btn btn-sm" style="background:#f1f5f9;">Reset</a>{% endif %}
+  </form>
+</div>
+<div class="d-card">
+  <div class="d-card-body" style="padding:0;overflow-x:auto;">
+    <table class="sw-table" style="min-width:680px;">
+      <thead><tr><th>Judul</th><th>Kategori</th><th>Penulis</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+      <tbody>
+        {% for tip in tips %}
+        <tr>
+          <td>
+            <div style="font-weight:700;font-size:.875rem;">{{ tip.judul }}</div>
+            <div style="font-size:.75rem;color:#94a3b8;">{{ tip.isi|striptags|truncatechars:60 }}</div>
+          </td>
+          <td><span class="badge b-sky">{{ tip.kategori.nama }}</span></td>
+          <td style="font-size:.85rem;color:#64748b;">{{ tip.penulis.username }}</td>
+          <td style="font-size:.78rem;color:#94a3b8;">{{ tip.dibuat|date:"d M Y" }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'tips_detail' tip.pk %}" class="btn btn-sm" style="background:#f1f5f9;border-radius:8px;"><i class="fa fa-eye"></i></a>
+              <a href="{% url 'tips_edit' tip.pk %}" class="btn btn-outline btn-sm" style="border-radius:8px;"><i class="fa fa-pen"></i></a>
+              <button onclick="confirmDelete('{% url 'tips_delete' tip.pk %}','{{ tip.judul|escapejs }}')" class="btn btn-danger btn-sm" style="border-radius:8px;"><i class="fa fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:3rem;">
+          Belum ada tips. <a href="{% url 'tips_create' %}" style="color:#0ea5e9;font-weight:700;">Tambahkan sekarang →</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if tips.has_other_pages %}
+<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:1.5rem;">
+  {% if tips.has_previous %}
+    <a href="?page={{ tips.previous_page_number }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">‹ Sebelumnya</a>
+  {% endif %}
+  <span class="page-info">Halaman {{ tips.number }} dari {{ tips.paginator.num_pages }}</span>
+  {% if tips.has_next %}
+    <a href="?page={{ tips.next_page_number }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">Selanjutnya ›</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

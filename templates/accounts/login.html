@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Masuk — SkyWise AI{% endblock %}
+{% block footer %}{% endblock %}
+{% block content %}
+<div style="min-height:calc(100vh - 64px);display:flex;align-items:center;justify-content:center;background:linear-gradient(155deg,#AFC9DE,#5B8AAE,#2C5470);padding:2rem;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">
+    <div style="position:absolute;top:10%;right:8%;font-size:8rem;opacity:.05;animation:float 8s ease-in-out infinite;">⛅</div>
+    <div style="position:absolute;bottom:15%;left:6%;font-size:6rem;opacity:.05;animation:float3 10s ease-in-out infinite 2s;">🌤️</div>
+  </div>
+
+  <div style="width:100%;max-width:420px;position:relative;z-index:1;">
+    <!-- Brand -->
+    <div style="text-align:center;margin-bottom:2rem;">
+      <div style="width:56px;height:56px;background:linear-gradient(135deg,#6FA8DC,#3E7CB1);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.75rem;margin:0 auto 1rem;box-shadow:0 6px 20px rgba(62,124,177,.4);">⛅</div>
+      <h1 style="font-size:1.5rem;font-weight:800;color:#fff;">SkyWise AI</h1>
+      <p style="font-size:.85rem;color:rgba(255,255,255,.6);margin-top:4px;">Masuk ke akun Anda</p>
+    </div>
+
+    <div class="glass fu" style="padding:2rem;">
+
+      {% if messages %}
+      {% for msg in messages %}
+      <div class="alert alert-danger" style="margin-bottom:1rem;">
+        <i class="fa fa-circle-xmark"></i> {{ msg }}
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <div class="input-wrap">
+            <i class="fa fa-user input-icon"></i>
+            <input type="text" name="username" id="username" class="form-control" placeholder="Masukkan username" required autofocus>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-wrap">
+            <i class="fa fa-lock input-icon"></i>
+            <input type="password" name="password" id="password" class="form-control" placeholder="Masukkan password" required>
+            <button type="button" onclick="togglePwd()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;" id="pwd-toggle">
+              <i class="fa fa-eye" id="pwd-icon"></i>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="remember" style="accent-color:var(--sky);">
+            <span style="color:var(--text-mid);">Ingat Saya</span>
+          </label>
+          <a href="{% url 'password_reset' %}" style="font-size:.82rem;color:var(--sky);font-weight:600;">Lupa Password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;border-radius:12px;padding:13px;">
+          <i class="fa fa-right-to-bracket"></i> Masuk
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #e2e8f0;">
+        <p style="font-size:.78rem;color:var(--muted);">
+          Pengguna biasa tidak perlu login. <a href="{% url 'index' %}" style="color:var(--sky);font-weight:600;">← Kembali ke SkyWise</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePwd() {
+  const inp = document.getElementById('password');
+  const ico = document.getElementById('pwd-icon');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  ico.className = inp.type === 'password' ? 'fa fa-eye' : 'fa fa-eye-slash';
+}
+</script>
+{% endblock %}

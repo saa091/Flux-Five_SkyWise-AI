@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Profil — {{ user.username }} — SkyWise AI{% endblock %}
+
+{% block content %}
+<section style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:4rem 2rem 3rem;">
+  <div style="max-width:900px;margin:0 auto;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+    <div style="width:72px;height:72px;background:#38bdf8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#0f172a;flex-shrink:0;">{{ user.username|first|upper }}</div>
+    <div>
+      <h1 style="color:#fff;font-size:1.8rem;font-weight:800;margin-bottom:.25rem;">{{ user.first_name|default:user.username }}</h1>
+      <p style="color:#94a3b8;font-size:.9rem;">@{{ user.username }} · Bergabung {{ user.date_joined|date:"d M Y" }}</p>
+    </div>
+  </div>
+</section>
+
+<section style="background:#f1f5f9;padding:2.5rem 2rem;min-height:60vh;">
+  <div class="rg-2col" style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+
+    <!-- Edit Profil -->
+    <div style="background:#fff;border-radius:16px;padding:1.75rem;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+      <h2 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:1.25rem;"><i class="fa fa-user-pen" style="color:#38bdf8;margin-right:8px;"></i>Edit Profil</h2>
+      <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profil">
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:.3rem;">Nama Lengkap</label>
+          <input type="text" name="first_name" value="{{ user.first_name }}" placeholder="Nama lengkap kamu" style="width:100%;padding:.65rem .9rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:.3rem;">Email</label>
+          <input type="email" name="email" value="{{ user.email }}" placeholder="email@kamu.com" style="width:100%;padding:.65rem .9rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:.25rem;">
+          <label style="display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:.3rem;">Username</label>
+          <input type="text" value="{{ user.username }}" disabled style="width:100%;padding:.65rem .9rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;background:#f8fafc;color:#94a3b8;box-sizing:border-box;">
+          <p style="font-size:.75rem;color:#94a3b8;margin:.25rem 0 0;">Username tidak dapat diubah.</p>
+        </div>
+        <button type="submit" style="margin-top:1.25rem;width:100%;padding:.7rem;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Simpan Perubahan</button>
+      </form>
+    </div>
+
+    <!-- Ganti Password -->
+    <div style="background:#fff;border-radius:16px;padding:1.75rem;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+      <h2 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:1.25rem;"><i class="fa fa-lock" style="color:#a78bfa;margin-right:8px;"></i>Ganti Password</h2>
+      <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="ganti_password">
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:.3rem;">Password Lama</label>
+          <input type="password" name="old_password" required placeholder="••••••••" style="width:100%;padding:.65rem .9rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:.3rem;">Password Baru</label>
+          <input type="password" name="new_password" required minlength="8" placeholder="Min. 8 karakter" style="width:100%;padding:.65rem .9rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;">
+        </div>
+        <button type="submit" style="margin-top:.5rem;width:100%;padding:.7rem;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Update Password</button>
+      </form>
+    </div>
+
+    <!-- Foto yang diunggah -->
+    <div style="background:#fff;border-radius:16px;padding:1.75rem;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+      <h2 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:1rem;"><i class="fa fa-images" style="color:#10b981;margin-right:8px;"></i>Foto Saya ({{ galeri_upload_list|length }})</h2>
+      {% if galeri_upload_list %}
+      <div class="rg-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        {% for g in galeri_upload_list|slice:":4" %}
+        <div style="position:relative;border-radius:10px;overflow:hidden;height:90px;">
+          <img src="{{ g.gambar.url }}" alt="{{ g.judul }}" style="width:100%;height:100%;object-fit:cover;">
+          {% if not g.disetujui %}<span style="position:absolute;bottom:4px;left:4px;background:rgba(245,158,11,.9);color:#fff;font-size:.65rem;padding:2px 6px;border-radius:6px;">Menunggu</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if galeri_upload_list|length > 4 %}<p style="font-size:.8rem;color:#64748b;text-align:center;margin:.75rem 0 0;">+{{ galeri_upload_list|length|add:"-4" }} foto lainnya</p>{% endif %}
+      {% else %}
+      <p style="color:#94a3b8;font-size:.9rem;text-align:center;padding:1.5rem 0;">Belum pernah upload foto.<br><a href="{% url 'galeri_upload' %}" style="color:#38bdf8;">Upload foto cuaca</a> sekarang!</p>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ action }} Tips — SkyWise Admin{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<style>
+  .form-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .form-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: #64748b;
+    margin-bottom: .5rem;
+  }
+  .form-label .req { color: #ef4444; }
+  .form-control {
+    width: 100%;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .65rem 1rem;
+    font-size: .95rem;
+    color: #1e293b;
+    transition: border-color .2s;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  .form-control:focus { border-color: #0ea5e9; }
+
+  /* Quill editor */
+  #quill-editor {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0 0 10px 10px;
+    min-height: 480px;
+    font-size: .97rem;
+    color: #1e293b;
+    line-height: 1.8;
+  }
+  #quill-editor:focus-within { border-color: #0ea5e9; }
+  .ql-toolbar.ql-snow {
+    border: 1.5px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 10px 10px 0 0;
+    background: #f8fafc;
+  }
+
+  /* Format guide */
+  .format-guide {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-top: .75rem;
+    font-size: .84rem;
+    color: #0c4a6e;
+  }
+  .format-guide summary {
+    font-weight: 700;
+    cursor: pointer;
+    color: #0369a1;
+    user-select: none;
+  }
+  .format-guide-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem .75rem;
+    margin-top: .75rem;
+  }
+  .fg-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: .4rem .6rem;
+    background: #fff;
+    border-radius: 7px;
+    border: 1px solid #e0f2fe;
+  }
+  .fg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #0ea5e9;
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .fg-desc { font-size: .8rem; color: #475569; line-height: 1.4; }
+
+  /* Preview panel */
+  .preview-card {
+    background: #f8fafc;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    min-height: 120px;
+    font-size: .95rem;
+    color: #334155;
+    line-height: 1.85;
+  }
+  .preview-card p { margin: 0 0 .75rem; }
+  .preview-card p:last-child { margin-bottom: 0; }
+  .preview-card strong { color: #0f172a; font-weight: 700; }
+  .preview-card ul, .preview-card ol { padding-left: 1.4rem; margin: .3rem 0 .75rem; }
+  .preview-card li { margin-bottom: .25rem; }
+  .preview-card h1, .preview-card h2, .preview-card h3 {
+    color: #0f172a; font-weight: 700; margin: 1rem 0 .4rem;
+  }
+  .preview-card h1 { font-size: 1.2rem; }
+  .preview-card h2 { font-size: 1.05rem; }
+  .preview-card h3 { font-size: .95rem; }
+  .preview-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #94a3b8;
+    margin-bottom: .5rem;
+  }
+
+  /* Buttons */
+  .btn-save {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #0ea5e9; color: #fff;
+    padding: .7rem 1.5rem; border-radius: 10px;
+    font-weight: 700; font-size: .92rem;
+    border: none; cursor: pointer; transition: opacity .2s;
+  }
+  .btn-save:hover { opacity: .88; }
+  .btn-cancel {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; color: #64748b;
+    padding: .7rem 1.25rem; border-radius: 10px;
+    font-weight: 600; font-size: .92rem;
+    border: 1.5px solid #e2e8f0; text-decoration: none;
+    transition: border-color .2s;
+  }
+  .btn-cancel:hover { border-color: #94a3b8; }
+
+  .char-count {
+    font-size: .78rem; color: #94a3b8;
+    text-align: right; margin-top: 4px;
+  }
+  .char-count.warn { color: #f59e0b; }
+  .char-count.over { color: #ef4444; font-weight: 700; }
+
+  /* ===== Layout 2 kolom full-width ===== */
+  .form-page-wrap {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .form-col-main { min-width: 0; }
+  .form-col-side {
+    position: sticky;
+    top: 1.5rem;
+  }
+  .side-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .side-card-title {
+    font-size: .85rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  @media (max-width: 1100px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-col-side { position: static; }
+  }
+  @media (max-width: 640px) {
+    .form-page-wrap { padding: 1rem 0.75rem 2rem; }
+    .form-card > div[style*="1fr 220px"] { grid-template-columns: 1fr !important; }
+  }
+</style>
+
+<div class="form-page-wrap">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;">
+    <a href="{% url 'tips_list_dashboard' %}" style="display:inline-flex;align-items:center;gap:6px;color:#64748b;text-decoration:none;font-size:.88rem;font-weight:600;">
+      ← Kembali ke Daftar Tips
+    </a>
+  </div>
+  <h1 style="font-size:1.4rem;font-weight:800;color:#0f172a;margin:0 0 1.5rem;">
+    {% if action == 'Edit' %}Edit Tips{% else %} Tambah Tips Baru{% endif %}
+  </h1>
+
+  <form method="post" enctype="multipart/form-data" id="tips-form">
+    {% csrf_token %}
+
+    <div class="form-grid">
+
+      <!-- ═══════════ KOLOM KIRI: Form Utama ═══════════ -->
+      <div class="form-col-main">
+
+        <!-- Judul + Kategori -->
+        <div class="form-card">
+          <div style="display:grid;grid-template-columns:1fr 220px;gap:1rem;align-items:start;">
+            <div>
+              <label class="form-label">📝 Judul Tips <span class="req"></span></label>
+              <input type="text" name="judul" class="form-control" maxlength="120"
+                value="{{ tips.judul|default:'' }}" required
+                placeholder="Tuliskan tips dan langkah praktis dengan jelas"
+                id="judul-input">
+              <div class="char-count" id="judul-count">0 / 120</div>
+            </div>
+            <div>
+              <label class="form-label">🏷️ Kategori <span class="req"></span></label>
+              <select name="kategori" class="form-control" required>
+                {% for k in kategori_list %}
+                  <option value="{{ k.id }}" {% if tips.kategori_id == k.id %}selected{% endif %}>
+                    {{ k.nama }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ISI TIPS dengan Quill Editor -->
+        <div class="form-card">
+          <label class="form-label">📄 Isi Tips <span class="req"></span></label>
+
+          <!-- Quill Editor -->
+          <div id="quill-editor"></div>
+          <!-- Hidden input yang dikirim ke server -->
+          <textarea name="isi" id="isi-hidden" style="display:none;">{{ tips.isi|default:'' }}</textarea>
+        </div>
+
+      </div>
+      <!-- ═══════════ END KOLOM KIRI ═══════════ -->
+
+      <!-- ═══════════ KOLOM KANAN: Preview + Panduan + Gambar + Aksi (sticky) ═══════════ -->
+      <div class="form-col-side">
+
+        <!-- Live Preview -->
+        <div class="side-card">
+          <div class="side-card-title">👁 Preview Tampilan Publik</div>
+          <div class="preview-card" id="live-preview">
+            <span style="color:#94a3b8;font-style:italic;">Pratinjau akan ditampilkan saat Anda mulai mengetik</span>
+          </div>
+        </div>
+
+        <!-- Panduan format -->
+        <div class="side-card" style="padding:0;overflow:hidden;">
+          <details class="format-guide" style="margin:0;border:none;border-radius:16px;">
+            <summary style="padding:1.25rem 1.5rem;">💡 Panduan Format Penulisan</summary>
+            <div style="padding:0 1.5rem 1.25rem;">
+              <div class="format-guide-grid" style="grid-template-columns:1fr;">
+                <div class="fg-item">
+                  <span class="fg-btn">H1/H2/H3</span>
+                  <span class="fg-desc">Judul section — untuk tiap sub-topik besar</span>
+                </div>
+                <div class="fg-item">
+                  <span class="fg-btn">B</span>
+                  <span class="fg-desc">Bold — untuk kata kunci penting atau istilah teknis</span>
+                </div>
+                <div class="fg-item">
+                  <span class="fg-btn">• List</span>
+                  <span class="fg-desc">Bullet list — untuk daftar item tanpa urutan</span>
+                </div>
+                <div class="fg-item">
+                  <span class="fg-btn">1. List</span>
+                  <span class="fg-desc">Numbered list — untuk langkah-langkah berurutan</span>
+                </div>
+              </div>
+              <div style="margin-top:.75rem;padding:.6rem .75rem;background:#fff7ed;border-radius:7px;border:1px solid #fed7aa;color:#92400e;font-size:.78rem;">
+                ⚠️ <strong>Jangan tulis satu paragraf panjang!</strong> Pecah jadi beberapa paragraf + heading.
+              </div>
+              <div style="margin-top:.5rem;padding:.6rem .75rem;background:#f0f9ff;border-radius:7px;border:1px solid #bae6fd;color:#0c4a6e;font-size:.78rem;">
+                💡 <strong>Daftar bernomor:</strong> klik tombol numbered list, ketik tiap item, Enter. Nomor lanjut otomatis 1→2→3.
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Gambar Sampul -->
+        <div class="side-card">
+          <label class="form-label">🖼️ Gambar Sampul <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(opsional)</span></label>
+          {% if tips.gambar %}
+            <div style="margin-bottom:.75rem;">
+              <img src="{{ tips.gambar.url }}" style="height:70px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover;">
+              <span style="font-size:.78rem;color:#64748b;margin-left:8px;">Gambar saat ini</span>
+            </div>
+          {% endif %}
+          <input type="file" name="gambar" class="form-control" accept="image/jpeg,image/png,image/webp"
+            style="padding:.5rem;" id="gambar-input">
+          <div style="font-size:.74rem;color:#94a3b8;margin-top:4px;">JPG, PNG, WEBP. Maks 5MB.</div>
+          <div id="gambar-preview" style="margin-top:.75rem;display:none;">
+            <img id="gambar-preview-img" style="height:90px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover;">
+            <span style="font-size:.78rem;color:#64748b;margin-left:8px;">Preview gambar baru</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex;flex-direction:column;gap:.6rem;">
+          <button type="submit" class="btn-save" style="width:100%;justify-content:center;">
+            💾 Simpan Tips
+          </button>
+          <a href="{% url 'tips_list_dashboard' %}" class="btn-cancel" style="width:100%;justify-content:center;box-sizing:border-box;">✕ Batal</a>
+        </div>
+
+      </div>
+      <!-- ═══════════ END KOLOM KANAN ═══════════ -->
+
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script>
+(function () {
+  // ── Init Quill (toolbar lengkap, mirip CKEditor) ──
+  var quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    placeholder: 'Tulis isi tips di sini...',
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ color: [] }, { background: [] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        [{ indent: '-1' }, { indent: '+1' }],
+        ['blockquote', 'code-block'],
+        ['link'],
+        ['clean']
+      ]
+    }
+  });
+
+  // ── Load konten yang sudah ada (mode Edit) ──
+  var existing = document.getElementById('isi-hidden').value.trim();
+  if (existing) {
+    // Jika konten adalah plain text (tidak ada tag HTML), konversi dulu
+    var isHTML = /<[a-z][\s\S]*>/i.test(existing);
+    if (isHTML) {
+      quill.clipboard.dangerouslyPasteHTML(existing);
+    } else {
+      // Konversi plain text ke HTML sederhana sebelum di-load ke Quill
+      var converted = convertPlainToHTML(existing);
+      quill.clipboard.dangerouslyPasteHTML(converted);
+    }
+  }
+
+  // ── Sync ke hidden textarea saat berubah ──
+  quill.on('text-change', function () {
+    var html = quill.getSemanticHTML();
+    document.getElementById('isi-hidden').value = html;
+    updatePreview(html);
+  });
+
+  // ── Live preview ──
+  function updatePreview(html) {
+    var preview = document.getElementById('live-preview');
+    if (!html || html === '<p></p>' || html.trim() === '') {
+      preview.innerHTML = '<span style="color:#94a3b8;font-style:italic;">Preview akan muncul saat kamu mulai mengetik...</span>';
+    } else {
+      preview.innerHTML = html;
+    }
+  }
+
+  // Trigger preview awal jika ada konten existing
+  if (existing) {
+    updatePreview(quill.getSemanticHTML());
+  }
+
+  // ── Submit: pastikan konten Quill masuk ke hidden textarea ──
+  document.getElementById('tips-form').addEventListener('submit', function (e) {
+    var html = quill.getSemanticHTML();
+    if (!html || html === '<p></p>' || html === '<p><br></p>') {
+      e.preventDefault();
+      alert('Isi tips tidak boleh kosong!');
+      return;
+    }
+    document.getElementById('isi-hidden').value = html;
+  });
+
+  // ── Char counter judul ──
+  var judulInput = document.getElementById('judul-input');
+  var judulCount = document.getElementById('judul-count');
+  function updateJudulCount() {
+    var len = judulInput.value.length;
+    judulCount.textContent = len + ' / 120';
+    judulCount.className = 'char-count' + (len > 110 ? ' over' : len > 90 ? ' warn' : '');
+  }
+  judulInput.addEventListener('input', updateJudulCount);
+  updateJudulCount();
+
+  // ── Preview gambar ──
+  document.getElementById('gambar-input').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      document.getElementById('gambar-preview-img').src = ev.target.result;
+      document.getElementById('gambar-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ── Konverter plain text lama → HTML (untuk konten lama yang belum HTML) ──
+  // Catatan: konten lama sering tersimpan TANPA line break (satu paragraf
+  // panjang), jadi parser ini berbasis POLA KONTEN (bold heading, dash list,
+  // numbered list), bukan berbasis newline.
+  function convertPlainToHTML(text) {
+    text = text.trim();
+
+    // Pisahkan teks berdasarkan heading bold: **Judul:** atau **Judul**
+    var parts = [];
+    var headingRegex = /\*\*(.+?)\*\*:?/g;
+    var lastIndex = 0;
+    var match;
+
+    while ((match = headingRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+      }
+      parts.push({ type: 'heading', content: match[1].replace(/:$/, '') });
+      lastIndex = headingRegex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      parts.push({ type: 'text', content: text.slice(lastIndex) });
+    }
+    if (parts.length === 0) {
+      parts.push({ type: 'text', content: text });
+    }
+
+    var html = '';
+    for (var p = 0; p < parts.length; p++) {
+      var part = parts[p];
+      if (part.type === 'heading') {
+        html += '<h2>' + part.content + '</h2>';
+        continue;
+      }
+
+      var chunk = part.content.trim();
+      if (!chunk) continue;
+
+      // Coba split sebagai bullet list (pemisah " - " sebelum huruf kapital)
+      var bulletSplit = chunk.split(/(?:^|\s)-\s+(?=[A-Z])/);
+
+      if (bulletSplit.length > 1) {
+        var intro = bulletSplit[0].trim();
+        if (intro) html += '<p>' + fmtInline(intro) + '</p>';
+        html += '<ul>';
+        for (var b = 1; b < bulletSplit.length; b++) {
+          var item = bulletSplit[b].trim().replace(/\s+$/, '');
+          if (item) html += '<li>' + fmtInline(item) + '</li>';
+        }
+        html += '</ul>';
+        continue;
+      }
+
+      // Coba split sebagai numbered list ("1. xxx 2. xxx")
+      var stepSplit = chunk.split(/(?:^|\s)(\d+)\.\s+(?=[A-Z])/);
+      if (stepSplit.length > 2) {
+        var introText = stepSplit[0].trim();
+        if (introText) html += '<p>' + fmtInline(introText) + '</p>';
+        html += '<ol>';
+        for (var s = 2; s < stepSplit.length; s += 2) {
+          var stepItem = stepSplit[s].trim();
+          if (stepItem) html += '<li>' + fmtInline(stepItem) + '</li>';
+        }
+        html += '</ol>';
+        continue;
+      }
+
+      // Tidak ada pola list — paragraf biasa
+      html += '<p>' + fmtInline(chunk) + '</p>';
+    }
+
+    return html;
+  }
+
+  function fmtInline(str) {
+    return str
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  }
+})();
+</script>
+{% endblock %}

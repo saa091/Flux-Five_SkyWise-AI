@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}SkyWise AI — Beranda{% endblock %}
+{% block content %}
+
+<style>
+  @keyframes sw-spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes sw-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+  @keyframes sw-float2 { 0%,100%{transform:translateY(0) translateX(0)} 50%{transform:translateY(-9px) translateX(5px)} }
+  @keyframes sw-blink  { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:.5} }
+  @keyframes sw-fadein { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes sw-rain   { 0%{transform:translateY(-8px);opacity:0} 60%{opacity:1} 100%{transform:translateY(18px);opacity:0} }
+
+  /* Cara Kerja animations */
+  @keyframes ck-line   { from{width:0} to{width:100%} }
+  @keyframes ck-pop    { 0%{transform:scale(0) rotate(-15deg);opacity:0} 70%{transform:scale(1.12) rotate(3deg)} 100%{transform:scale(1) rotate(0deg);opacity:1} }
+  @keyframes ck-text   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes ck-pulse  { 0%,100%{box-shadow:0 0 0 0 rgba(62,124,177,.4)} 50%{box-shadow:0 0 0 14px rgba(62,124,177,0)} }
+  @keyframes ck-pulse2 { 0%,100%{box-shadow:0 0 0 0 rgba(139,92,246,.4)} 50%{box-shadow:0 0 0 14px rgba(139,92,246,0)} }
+  @keyframes ck-pulse3 { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)} 50%{box-shadow:0 0 0 14px rgba(34,197,94,0)} }
+  @keyframes ck-float  { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-8px)} }
+  @keyframes ck-num    { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
+  .ck-step { opacity:0; }
+  .ck-step.visible { animation:ck-pop .6s cubic-bezier(.34,1.56,.64,1) forwards; }
+  .ck-step-text { opacity:0; }
+  .ck-step-text.visible { animation:ck-text .5s ease forwards; }
+  .ck-line-fill { width:0; transition:width 1s ease; }
+  .ck-line-fill.visible { width:100%; }
+  .ck-icon-1.visible { animation:ck-pop .6s cubic-bezier(.34,1.56,.64,1) forwards, ck-float 3s ease-in-out 1s infinite; }
+  .ck-icon-2.visible { animation:ck-pop .6s cubic-bezier(.34,1.56,.64,1) .25s forwards, ck-float 3s ease-in-out 1.25s infinite; }
+  .ck-icon-3.visible { animation:ck-pop .6s cubic-bezier(.34,1.56,.64,1) .5s forwards, ck-float 3s ease-in-out 1.5s infinite; }
+  .ck-ring-1 { animation:ck-pulse 2.5s ease-in-out 1.2s infinite; }
+  .ck-ring-2 { animation:ck-pulse2 2.5s ease-in-out 1.5s infinite; }
+  .ck-ring-3 { animation:ck-pulse3 2.5s ease-in-out 1.8s infinite; }
+</style>
+
+<!-- ══ HERO ══ -->
+<section style="background:linear-gradient(155deg,#AFC9DE 0%,#5B8AAE 45%,#2C5470 100%);min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;"></div>
+  <div style="position:absolute;top:-160px;right:-120px;width:500px;height:500px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none;"></div>
+  <div style="position:absolute;bottom:-100px;left:-100px;width:360px;height:360px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none;"></div>
+
+  <div style="flex:1;display:flex;align-items:center;max-width:1160px;margin:0 auto;padding:130px 2.5rem 100px;width:100%;">
+    <div class="rg-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;width:100%;">
+
+      <div style="animation:sw-fadein .7s ease both;">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.2);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.35);border-radius:50px;padding:6px 18px;margin-bottom:2rem;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;animation:sw-blink 2s ease-in-out infinite;flex-shrink:0;"></span>
+          <span style="font-size:.72rem;font-weight:800;color:#fff;letter-spacing:.08em;">LIVE • Real-Time Weather Data</span>
+        </div>
+        <h1 style="font-size:clamp(2.4rem,4.8vw,3.8rem);font-weight:900;color:#fff;line-height:1.05;margin-bottom:1.4rem;letter-spacing:-.025em;">
+          Selamat Datang di<br>
+          <span style="color:#fff;">Sky</span><span style="color:rgba(255,255,255,.5);">Wise</span> <span style="color:rgba(255,255,255,.32);">AI</span>
+        </h1>
+        <p style="font-size:1.05rem;color:rgba(255,255,255,.8);line-height:1.8;max-width:430px;margin-bottom:2.8rem;">
+          Informasi cuaca akurat dari ribuan kota di seluruh dunia secara real-time. Didukung AI untuk rekomendasi aktivitas harianmu.
+        </p>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;">
+          <div style="background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:12px 22px;min-width:100px;text-align:center;">
+            <div style="font-size:1.3rem;font-weight:900;color:#fff;line-height:1;">200K+</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.68);margin-top:4px;letter-spacing:.04em;">Kota Tersedia</div>
+          </div>
+          <div style="background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:12px 22px;min-width:100px;text-align:center;">
+            <div style="font-size:1.3rem;font-weight:900;color:#fff;line-height:1;">10 Min</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.68);margin-top:4px;letter-spacing:.04em;">Update Otomatis</div>
+          </div>
+          <div style="background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:12px 22px;min-width:100px;text-align:center;">
+            <div style="font-size:1.3rem;font-weight:900;color:#fff;line-height:1;">100%</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.68);margin-top:4px;letter-spacing:.04em;">Gratis & Open</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;animation:sw-fadein .7s ease .15s both;">
+        <div style="background:rgba(255,255,255,.16);backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,.32);border-radius:32px;padding:2.75rem;width:100%;max-width:480px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-50px;right:-50px;width:160px;height:160px;border-radius:50%;background:rgba(253,224,71,.12);pointer-events:none;"></div>
+          <svg viewBox="0 0 320 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+            <g style="animation:sw-float2 7s ease-in-out infinite 1.2s;opacity:.72;">
+              <ellipse cx="68" cy="72" rx="36" ry="20" fill="rgba(255,255,255,.88)"/>
+              <ellipse cx="50" cy="80" rx="24" ry="17" fill="rgba(255,255,255,.88)"/>
+              <ellipse cx="88" cy="79" rx="22" ry="15" fill="rgba(255,255,255,.88)"/>
+              <ellipse cx="68" cy="60" rx="22" ry="15" fill="rgba(255,255,255,.88)"/>
+            </g>
+            <circle cx="252" cy="68" r="54" fill="rgba(253,224,71,.16)"/>
+            <g style="animation:sw-spin 10s linear infinite;transform-origin:252px 68px;">
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8"/>
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8" transform="rotate(45,252,68)"/>
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8" transform="rotate(90,252,68)"/>
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8" transform="rotate(135,252,68)"/>
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8" transform="rotate(180,252,68)"/>
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8" transform="rotate(225,252,68)"/>
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8" transform="rotate(270,252,68)"/>
+              <rect x="249" y="4"  width="6" height="18" rx="3" fill="#fde047" opacity=".8" transform="rotate(315,252,68)"/>
+            </g>
+            <circle cx="252" cy="68" r="30" fill="#fde047"/>
+            <circle cx="243" cy="59" r="9"  fill="rgba(255,255,255,.26)"/>
+            <g style="animation:sw-float 5s ease-in-out infinite;">
+              <ellipse cx="148" cy="152" rx="84" ry="48" fill="white"/>
+              <ellipse cx="104" cy="164" rx="58" ry="42" fill="white"/>
+              <ellipse cx="196" cy="162" rx="52" ry="38" fill="white"/>
+              <ellipse cx="148" cy="124" rx="56" ry="38" fill="white"/>
+              <ellipse cx="178" cy="132" rx="46" ry="34" fill="white"/>
+              <ellipse cx="148" cy="196" rx="74" ry="10" fill="rgba(0,0,0,.05)"/>
+            </g>
+            <g style="animation:sw-rain 1.8s ease-in-out infinite;">
+              <line x1="112" y1="200" x2="107" y2="216" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+              <line x1="138" y1="204" x2="133" y2="220" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+              <line x1="164" y1="200" x2="159" y2="216" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+              <line x1="188" y1="204" x2="183" y2="220" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+            </g>
+            <circle cx="38"  cy="34" r="2.5" fill="#fde047" style="animation:sw-blink 2.2s ease-in-out infinite;"/>
+            <circle cx="68"  cy="16" r="1.8" fill="#fde047" style="animation:sw-blink 3.1s ease-in-out infinite .6s;"/>
+            <circle cx="298" cy="20" r="2.2" fill="#fde047" style="animation:sw-blink 2.7s ease-in-out infinite 1.1s;"/>
+          </svg>
+          <div style="display:flex;gap:10px;margin-top:1.1rem;justify-content:center;">
+            <div style="background:rgba(111,168,220,.2);border:1px solid rgba(111,168,220,.38);border-radius:50px;padding:7px 16px;">
+              <span style="font-size:.7rem;font-weight:700;color:#E6F0F7;">🌡️ Real-Time Data</span>
+            </div>
+            <div style="background:rgba(167,139,250,.2);border:1px solid rgba(167,139,250,.38);border-radius:50px;padding:7px 16px;">
+              <span style="font-size:.7rem;font-weight:700;color:#ede9fe;">🤖 AI Rekomendasi</span>
+            </div>
+          </div>
+          <p style="text-align:center;color:rgba(255,255,255,.46);font-size:.7rem;margin-top:.7rem;">✨ Masukkan nama kota untuk mulai</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="position:absolute;bottom:-1px;left:0;right:0;line-height:0;">
+    <svg viewBox="0 0 1440 90" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="width:100%;height:90px;display:block;">
+      <path fill="#f8fafc" d="M0,45 C360,90 720,0 1080,50 C1260,72 1380,20 1440,45 L1440,90 L0,90 Z"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ══ FEATURES ══ -->
+<section style="padding:6rem 2rem;background:#f8fafc;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:3.5rem;">
+      <span style="display:inline-block;background:#E6F0F7;color:#1F4E79;font-size:.72rem;font-weight:800;letter-spacing:.1em;padding:5px 16px;border-radius:50px;margin-bottom:1rem;">⭐ FITUR UNGGULAN</span>
+      <h2 style="font-size:clamp(1.8rem,3vw,2.6rem);font-weight:900;color:#0f172a;margin-bottom:.75rem;letter-spacing:-.02em;">Semua yang Kamu <span style="color:#3E7CB1;">Butuhkan</span></h2>
+      <p style="color:#64748b;font-size:1rem;max-width:480px;margin:0 auto;line-height:1.75;">Dari data real-time hingga rekomendasi AI — SkyWise hadir lengkap untuk harianmu.</p>
+    </div>
+    <div class="rg-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;">
+      {% for f in features %}
+      <div style="background:#fff;border-radius:20px;padding:1.75rem;border:1px solid #e2e8f0;transition:transform .25s,box-shadow .25s,border-color .25s;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 50px rgba(62,124,177,.1)';this.style.borderColor='#BBD4E8'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='#e2e8f0'">
+        <div style="width:50px;height:50px;border-radius:14px;background:{{ f.color }};display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:1.1rem;">{{ f.icon }}</div>
+        <h3 style="font-size:.95rem;font-weight:800;color:#0f172a;margin-bottom:.5rem;">{{ f.title }}</h3>
+        <p style="font-size:.85rem;color:#64748b;line-height:1.7;">{{ f.desc }}</p>
+      </div>
+      {% empty %}
+      {% for _ in "123456" %}
+      <div style="background:#fff;border-radius:20px;padding:1.75rem;border:1px solid #e2e8f0;transition:transform .25s,box-shadow .25s;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 50px rgba(62,124,177,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="width:50px;height:50px;border-radius:14px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:1.1rem;">🌤️</div>
+        <h3 style="font-size:.95rem;font-weight:800;color:#0f172a;margin-bottom:.5rem;">Fitur Unggulan</h3>
+        <p style="font-size:.85rem;color:#64748b;line-height:1.7;">Deskripsi fitur akan muncul di sini.</p>
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══ CARA KERJA ══ -->
+<section id="cara-kerja" style="padding:6rem 2rem;background:#fff;overflow:hidden;">
+  <div style="max-width:1000px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:4rem;">
+      <span style="display:inline-block;background:#f0fdf4;color:#16a34a;font-size:.72rem;font-weight:800;letter-spacing:.1em;padding:5px 16px;border-radius:50px;margin-bottom:1rem;">🚀 CARA KERJA</span>
+      <h2 style="font-size:clamp(1.8rem,3vw,2.4rem);font-weight:900;color:#0f172a;letter-spacing:-.02em;">Mulai dalam <span style="color:#3E7CB1;">3 Langkah</span></h2>
+    </div>
+
+    <div class="rg-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;position:relative;align-items:start;">
+
+      <!-- connector track -->
+      <div style="position:absolute;top:36px;left:calc(16.7% + 8px);right:calc(16.7% + 8px);height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
+        <div class="ck-line-fill" style="height:100%;background:linear-gradient(90deg,#3E7CB1,#8b5cf6,#22c55e);border-radius:4px;"></div>
+      </div>
+
+      <!-- Step 1 -->
+      <div style="text-align:center;position:relative;z-index:1;">
+        <div class="ck-step ck-icon-1 ck-ring-1" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#3E7CB1,#6FA8DC);display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin:0 auto 1.5rem;position:relative;">
+          🔍
+          <div class="ck-num-badge" style="position:absolute;top:-5px;right:-5px;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #3E7CB1;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:900;color:#3E7CB1;">1</div>
+        </div>
+        <div class="ck-step-text">
+          <h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin-bottom:.6rem;">Ketik Nama Kota</h3>
+          <p style="font-size:.875rem;color:#64748b;line-height:1.7;">Masukkan nama kota mana pun di kolom pencarian.</p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div style="text-align:center;position:relative;z-index:1;">
+        <div class="ck-step ck-icon-2 ck-ring-2" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin:0 auto 1.5rem;position:relative;">
+          ⚡
+          <div style="position:absolute;top:-5px;right:-5px;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #8b5cf6;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:900;color:#8b5cf6;">2</div>
+        </div>
+        <div class="ck-step-text" style="animation-delay:.25s;">
+          <h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin-bottom:.6rem;">Data Diproses AI</h3>
+          <p style="font-size:.875rem;color:#64748b;line-height:1.7;">AI kami mengambil & menganalisis data real-time seketika.</p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div style="text-align:center;position:relative;z-index:1;">
+        <div class="ck-step ck-icon-3 ck-ring-3" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#4ade80);display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin:0 auto 1.5rem;position:relative;">
+          ✅
+          <div style="position:absolute;top:-5px;right:-5px;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #22c55e;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:900;color:#22c55e;">3</div>
+        </div>
+        <div class="ck-step-text" style="animation-delay:.5s;">
+          <h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin-bottom:.6rem;">Dapat Rekomendasinya</h3>
+          <p style="font-size:.875rem;color:#64748b;line-height:1.7;">Terima info cuaca lengkap + rekomendasi aktivitas dari AI.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ STATS BANNER ══ -->
+<section style="padding:4rem 2rem;background:linear-gradient(135deg,#3E7CB1 0%,#1F4E79 100%);">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="rg-4col" style="display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;text-align:center;">
+      <div>
+        <div style="font-size:2.6rem;font-weight:900;color:#fff;line-height:1;" class="count-up" data-target="200000">0</div>
+        <p style="color:rgba(255,255,255,.75);font-size:.82rem;margin-top:6px;letter-spacing:.03em;">Kota Tersedia</p>
+      </div>
+      <div>
+        <div style="font-size:2.6rem;font-weight:900;color:#fff;line-height:1;">5</div>
+        <p style="color:rgba(255,255,255,.75);font-size:.82rem;margin-top:6px;letter-spacing:.03em;">Anggota Tim</p>
+      </div>
+      <div>
+        <div style="font-size:2rem;font-weight:900;color:#fff;line-height:1;">Real-Time</div>
+        <p style="color:rgba(255,255,255,.75);font-size:.82rem;margin-top:6px;letter-spacing:.03em;">Update Data</p>
+      </div>
+      <div>
+        <div style="font-size:2.6rem;font-weight:900;color:#fff;line-height:1;">100%</div>
+        <p style="color:rgba(255,255,255,.75);font-size:.82rem;margin-top:6px;letter-spacing:.03em;">Gratis & Open</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ══ -->
+<section style="padding:6rem 2rem;background:#f8fafc;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(62,124,177,.08),transparent 70%);pointer-events:none;"></div>
+  <div style="max-width:620px;margin:0 auto;text-align:center;position:relative;">
+    <div style="width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#3E7CB1,#6FA8DC);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.5rem;box-shadow:0 12px 32px rgba(62,124,177,.3);">🌤️</div>
+    <h2 style="font-size:clamp(1.8rem,3vw,2.4rem);font-weight:900;color:#0f172a;margin-bottom:1rem;letter-spacing:-.02em;">Siap Pantau Cuaca<br>Hari Ini?</h2>
+    <p style="color:#64748b;font-size:1rem;margin-bottom:2.25rem;line-height:1.75;">Cukup ketik nama kota dan dapatkan informasi cuaca lengkap beserta rekomendasi aktivitas dari AI dalam hitungan detik.</p>
+    <a href="{% url 'cek_cuaca' %}" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#3E7CB1,#1F4E79);color:#fff;font-size:1rem;font-weight:800;padding:16px 36px;border-radius:16px;text-decoration:none;box-shadow:0 8px 24px rgba(62,124,177,.35);transition:transform .2s,box-shadow .2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 36px rgba(62,124,177,.45)'" onmouseout="this.style.transform='';this.style.boxShadow='0 8px 24px rgba(62,124,177,.35)'">
+      <i class="fa fa-cloud-sun"></i> Cek Cuaca Sekarang
+    </a>
+  </div>
+</section>
+
+<script>
+(function(){
+  // Intersection Observer — trigger saat section masuk viewport
+  const section = document.getElementById('cara-kerja');
+  if (!section) return;
+
+  const icons  = section.querySelectorAll('.ck-step');
+  const texts  = section.querySelectorAll('.ck-step-text');
+  const line   = section.querySelector('.ck-line-fill');
+
+  let triggered = false;
+
+  const obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.isIntersecting && !triggered) {
+        triggered = true;
+
+        // Garis tumbuh
+        setTimeout(function(){ line.classList.add('visible'); }, 100);
+
+        // Icon muncul berurutan dengan bounce
+        icons.forEach(function(el, i){
+          setTimeout(function(){
+            el.style.opacity = '1';
+            el.classList.add('visible');
+          }, 200 + i * 220);
+        });
+
+        // Teks fade up berurutan
+        texts.forEach(function(el, i){
+          setTimeout(function(){
+            el.classList.add('visible');
+          }, 500 + i * 180);
+        });
+
+        obs.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+
+  obs.observe(section);
+})();
+</script>
+
+{% endblock %}

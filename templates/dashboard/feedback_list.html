@@ -1,0 +1,102 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Feedback — Dashboard SkyWise AI{% endblock %}
+{% block topbar_title %}Kelola Feedback{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-btn { padding:8px 16px; border-radius:8px; background:#f1f5f9; color:#334155; text-decoration:none; font-size:.85rem; font-weight:600; }
+.page-btn:hover { background:#e2e8f0; }
+.page-info { display:flex; align-items:center; font-size:.85rem; color:#64748b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="action-bar">
+  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;">
+    <div class="search-wrap">
+      <i class="fa fa-search"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Cari nama pengirim...">
+    </div>
+    <select name="rating" class="filter-sel" onchange="this.form.submit()">
+      <option value="">Semua Rating</option>
+      {% for i in "12345" %}
+      <option value="{{ forloop.counter }}" {% if rating_filter == forloop.counter|stringformat:'s' %}selected{% endif %}>{{ forloop.counter }} Bintang</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+    {% if q or rating_filter %}<a href="{% url 'feedback_dashboard' %}" class="btn btn-sm" style="background:#f1f5f9;">Reset</a>{% endif %}
+  </form>
+</div>
+<div class="d-card">
+  <div class="d-card-head">
+    <span class="d-card-title">💬 Daftar Feedback ({{ feedbacks.paginator.count }})</span>
+  </div>
+  <div class="d-card-body" style="padding:0;overflow-x:auto;">
+    <table class="sw-table" style="min-width:760px;">
+      <thead><tr><th>Pengirim</th><th>Rating</th><th>Pengalaman</th><th>Pesan</th><th>Tanggal</th><th>Aksi</th></tr></thead>
+      <tbody>
+        {% for fb in feedbacks %}
+        <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;color:#fff;">{{ fb.nama|first|upper }}</div>
+            <span style="font-weight:700;font-size:.875rem;">{{ fb.nama }}</span>
+          </div>
+        </td>
+        <td>
+          <span style="color:#f59e0b;font-size:.9rem;">{% for i in "12345" %}{% if forloop.counter <= fb.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+          <span style="font-size:.78rem;color:#64748b;margin-left:4px;">({{ fb.rating }}/5)</span>
+        </td>
+        <td><span class="badge {% if fb.pengalaman == 'Sangat Puas' %}b-green{% elif fb.pengalaman == 'Puas' %}b-sky{% elif fb.pengalaman == 'Cukup' %}b-yellow{% else %}b-red{% endif %}">{{ fb.pengalaman }}</span></td>
+        <td style="max-width:240px;">
+          <p style="font-size:.82rem;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"{{ fb.pesan }}"</p>
+          {% if fb.balasan_admin %}
+          <p style="font-size:.72rem;color:#0ea5e9;margin-top:4px;"><i class="fa fa-reply"></i> Sudah dibalas</p>
+          {% endif %}
+        </td>
+        <td style="font-size:.78rem;color:#94a3b8;white-space:nowrap;">{{ fb.dibuat|date:"d M Y, H:i" }}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button onclick="toggleBalas({{ fb.pk }})" class="btn btn-sm" style="background:#e0f2fe;color:#0284c7;border-radius:8px;" title="Balas"><i class="fa fa-reply"></i></button>
+            <button onclick="confirmDelete('{% url 'feedback_delete' fb.pk %}','feedback dari {{ fb.nama|escapejs }}')" class="btn btn-danger btn-sm" style="border-radius:8px;"><i class="fa fa-trash"></i></button>
+          </div>
+        </td>
+        </tr>
+        <tr id="balas-row-{{ fb.pk }}" style="display:none;">
+        <td colspan="6" style="background:#f8fafc;padding:1rem 1.25rem;">
+          <form method="POST" action="{% url 'feedback_balas' fb.pk %}" style="display:flex;gap:10px;align-items:flex-start;">
+            {% csrf_token %}
+            <textarea name="balasan_admin" rows="2" placeholder="Tulis balasan untuk {{ fb.nama }}..." style="flex:1;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.85rem;font-family:inherit;">{{ fb.balasan_admin|default:'' }}</textarea>
+            <button type="submit" class="btn btn-primary btn-sm" style="border-radius:8px;">Simpan</button>
+          </form>
+        </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:3rem;">Belum ada feedback masuk.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if feedbacks.has_other_pages %}
+<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:1.5rem;">
+  {% if feedbacks.has_previous %}
+    <a href="?page={{ feedbacks.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if rating_filter %}&rating={{ rating_filter }}{% endif %}" class="page-btn">‹ Sebelumnya</a>
+  {% endif %}
+  <span class="page-info">Halaman {{ feedbacks.number }} dari {{ feedbacks.paginator.num_pages }}</span>
+  {% if feedbacks.has_next %}
+    <a href="?page={{ feedbacks.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if rating_filter %}&rating={{ rating_filter }}{% endif %}" class="page-btn">Selanjutnya ›</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleBalas(id){
+  const row = document.getElementById('balas-row-'+id);
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}

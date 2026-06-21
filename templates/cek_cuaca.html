@@ -1,0 +1,1430 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Cek Cuaca — SkyWise AI{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ═══ FONTS & ROOT ═══ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --wx-font: 'Inter', 'Outfit', sans-serif;
+  --wx-indigo: #6366f1;
+  --wx-violet: #8b5cf6;
+  --wx-sky: #38bdf8;
+  --wx-blue: #3b82f6;
+  --wx-slate: #1e293b;
+  --wx-glass: rgba(255,255,255,0.12);
+  --wx-glass-border: rgba(255,255,255,0.22);
+  --wx-shadow: 0 32px 80px rgba(0,0,0,0.22);
+  --wx-r: 20px;
+  --wx-r-lg: 28px;
+}
+
+/* ═══ PAGE SHELL ═══ */
+.wx-page {
+  min-height: 100vh;
+  font-family: var(--wx-font);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ═══ ANIMATED GRADIENT BG — senada dengan hero Beranda ═══ */
+.wx-eyebrow {
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:20px;
+  padding:6px 14px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,.85);
+  margin-bottom: .9rem;
+}
+.wx-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0;}
+
+.wx-bg-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: background 1.2s ease;
+}
+
+/* Cerah — sama persis dengan hero Beranda */
+.wx-bg-wrap.wx-clear {
+  background: linear-gradient(155deg, #AFC9DE 0%, #5B8AAE 45%, #2C5470 100%);
+}
+/* Berawan — masih dalam keluarga biru Beranda, sedikit lebih abu */
+.wx-bg-wrap.wx-cloudy {
+  background: linear-gradient(155deg, #9DB4C9 0%, #5C7E97 45%, #2A3F50 100%);
+}
+/* Hujan — lebih gelap & dingin */
+.wx-bg-wrap.wx-rain {
+  background: linear-gradient(155deg, #5B7B95 0%, #344B5E 45%, #16232E 100%);
+}
+/* Badai — paling gelap */
+.wx-bg-wrap.wx-storm {
+  background: linear-gradient(155deg, #3A4A5E 0%, #232B45 45%, #0E0E1A 100%);
+}
+/* Salju — terang & dingin */
+.wx-bg-wrap.wx-snow {
+  background: linear-gradient(155deg, #E6F0F7 0%, #BBD4E8 45%, #93c5fd 100%);
+}
+/* Berkabut */
+.wx-bg-wrap.wx-fog {
+  background: linear-gradient(155deg, #C2CDD6 0%, #8A99A6 45%, #4F5C68 100%);
+}
+/* Malam */
+.wx-bg-wrap.wx-night {
+  background: linear-gradient(155deg, #2C5470 0%, #1A2E40 45%, #0A0F18 100%);
+}
+/* Default / belum ada pencarian — sama seperti hero Beranda */
+.wx-bg-wrap.wx-default {
+  background: linear-gradient(155deg, #AFC9DE 0%, #5B8AAE 45%, #2C5470 100%);
+}
+
+/* Noise overlay halus */
+.wx-bg-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+/* Titik-titik dekoratif, sama seperti hero Beranda */
+.wx-bg-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,.14) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+}
+
+/* ═══ ANIM LAYER ═══ */
+#wx-anim { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+#wx-anim > * { position: absolute; }
+
+/* ═══ SCROLL CONTAINER ═══ */
+.wx-scroll {
+  position: relative;
+  z-index: 10;
+  padding-top: 64px;
+}
+
+/* ═══ SEARCH ZONE ═══ */
+.wx-search-zone {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 0;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: wx-zone-in .7s ease forwards;
+}
+@keyframes wx-zone-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+.wx-eyebrow {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+  margin-bottom: .5rem;
+}
+.wx-headline {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: .35rem;
+  letter-spacing: -.03em;
+}
+.wx-subline {
+  font-size: .95rem;
+  color: rgba(255,255,255,.6);
+  margin-bottom: 1.6rem;
+  font-weight: 400;
+}
+
+/* Search bar */
+.wx-searchbar {
+  display: flex;
+  gap: 10px;
+  background: rgba(255,255,255,.14);
+  backdrop-filter: blur(24px);
+  border: 1.5px solid rgba(255,255,255,.28);
+  border-radius: 18px;
+  padding: 10px 10px 10px 16px;
+  align-items: center;
+  position: relative;
+  z-index: 500;
+}
+.wx-searchbar input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: #fff;
+  font-family: var(--wx-font);
+  font-weight: 500;
+}
+.wx-searchbar input::placeholder { color: rgba(255,255,255,.45); }
+.wx-searchbar .wx-search-icon { color: rgba(255,255,255,.5); font-size: 1rem; margin-right: 4px; flex-shrink: 0; }
+.wx-search-btn {
+  background: #fff;
+  color: var(--wx-blue);
+  border: none;
+  border-radius: 12px;
+  padding: 11px 22px;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--wx-font);
+  transition: all .2s;
+  white-space: nowrap;
+}
+.wx-search-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+
+/* ═══ AUTOCOMPLETE ═══ */
+#search-form { transition: margin-bottom .15s ease; }
+#search-form.ac-open { margin-bottom: 290px; }
+.wx-ac-wrap { position: relative; flex: 1; }
+#wx-ac-list {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: -16px;
+  right: 0;
+  background: rgba(15,23,42,.96);
+  backdrop-filter: blur(24px);
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 9999;
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.wx-ac-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: .875rem;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background .12s;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.wx-ac-item:last-child { border-bottom: none; }
+.wx-ac-item:hover, .wx-ac-item.sel { background: rgba(56,189,248,.18); }
+.wx-ac-main { font-weight: 600; color: #fff; }
+.wx-ac-sub { font-size: .72rem; color: #64748b; }
+
+/* ═══ HISTORY ═══ */
+.wx-history {
+  margin-top: .75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wx-hist-label { font-size: .68rem; color: rgba(255,255,255,.4); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.wx-hist-chip {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: .75rem;
+  color: rgba(255,255,255,.75);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wx-hist-chip:hover { background: rgba(255,255,255,.2); color: #fff; }
+.wx-hist-del { opacity: .4; font-size: .8rem; }
+.wx-hist-del:hover { opacity: 1; color: #fca5a5; }
+
+/* ═══ POPULAR CITIES ═══ */
+.wx-popular-wrap { margin-top: .6rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wx-pop-btn {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: .76rem;
+  color: rgba(255,255,255,.65);
+  cursor: pointer;
+  font-family: var(--wx-font);
+  font-weight: 500;
+  transition: all .15s;
+}
+.wx-pop-btn:hover { background: rgba(255,255,255,.18); color: #fff; border-color: rgba(255,255,255,.3); }
+
+/* ═══ ERROR BANNERS ═══ */
+.wx-error-wrap { max-width: 1100px; margin: 1.5rem auto; padding: 0 1.5rem; }
+.wx-error-box {
+  border-radius: 20px;
+  padding: 1.4rem 1.6rem;
+  color: #fff;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1.5px solid;
+}
+.wx-error-warn { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.25); }
+.wx-error-danger { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); }
+.wx-error-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+.wx-error-warn .wx-error-icon { background: rgba(251,191,36,.18); }
+.wx-error-danger .wx-error-icon { background: rgba(239,68,68,.18); }
+
+/* ═══ MAIN WEATHER LAYOUT ═══ */
+.wx-main { max-width: 1160px; margin: 2rem auto 5rem; padding: 0 1.5rem; }
+
+/* ═══ HERO CARD ═══ */
+.wx-hero-card {
+  background: rgba(255,255,255,.13);
+  backdrop-filter: blur(32px);
+  border: 1.5px solid rgba(255,255,255,.22);
+  border-radius: var(--wx-r-lg);
+  padding: 2rem 2.2rem;
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+}
+.wx-hero-card::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 240px; height: 240px;
+  background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.wx-hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.wx-city-name { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+.wx-city-meta { font-size: .8rem; color: rgba(255,255,255,.6); margin-top: 3px; font-weight: 400; }
+
+/* Big temp display */
+.wx-temp-row { display: flex; align-items: center; gap: 1.4rem; }
+.wx-temp-icon { width: 100px; height: 100px; filter: drop-shadow(0 8px 24px rgba(0,0,0,.3)); animation: wx-float 6s ease-in-out infinite; }
+@keyframes wx-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.wx-temp-num { font-size: 5.5rem; font-weight: 900; line-height: 1; letter-spacing: -.05em; }
+.wx-temp-unit { font-size: 1.8rem; font-weight: 400; opacity: .6; letter-spacing: 0; }
+.wx-desc-text { font-size: 1.05rem; font-weight: 500; opacity: .88; text-transform: capitalize; margin-top: 4px; }
+.wx-feels { font-size: .82rem; opacity: .6; margin-top: 3px; }
+
+.wx-minmax { display: flex; gap: 10px; margin-top: 1rem; }
+.wx-minmax-badge {
+  background: rgba(255,255,255,.12);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.8);
+}
+
+/* ═══ HERO SUNSET TAG (pojok kanan bawah hero card) ═══ */
+.wx-hero-sunset-tag { position: absolute; bottom: 1.4rem; right: 1.8rem; text-align: right; color: rgba(255,255,255,.85); z-index: 2; }
+.wx-hero-sunset-time { font-size: 1rem; font-weight: 800; }
+.wx-hero-sunset-label { font-size: .65rem; opacity: .6; letter-spacing: .04em; }
+
+/* ═══ HERO SPLIT — mini stats + forecast strip (gaya referensi, tanpa chart) ═══ */
+.wx-hero-split { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1rem; margin-bottom: 1rem; }
+.wx-mini-stats-card {
+  background: rgba(255,255,255,.1);
+  backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255,255,255,.16);
+  border-radius: var(--wx-r);
+  padding: 1.3rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  color: #fff;
+}
+.wx-mini-stat { display: flex; align-items: flex-start; gap: 10px; }
+.wx-mini-stat-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+.wx-mini-stat-label { font-size: .66rem; color: rgba(255,255,255,.5); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.wx-mini-stat-val { font-size: 1.05rem; font-weight: 800; }
+
+.wx-fc-strip-card {
+  background: rgba(255,255,255,.1);
+  backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255,255,255,.16);
+  border-radius: var(--wx-r);
+  padding: 1.3rem;
+  color: #fff;
+}
+.wx-fc-strip-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-top: .9rem; }
+.wx-fc-strip-item { background: rgba(255,255,255,.08); border-radius: 14px; padding: .7rem .4rem; text-align: center; transition: all .2s; }
+.wx-fc-strip-item:hover { background: rgba(255,255,255,.18); transform: translateY(-3px); }
+.wx-fc-strip-day { font-size: .68rem; font-weight: 700; opacity: .7; margin-bottom: 4px; }
+.wx-fc-strip-icon { width: 34px; height: 34px; }
+.wx-fc-strip-max { font-size: .9rem; font-weight: 800; margin-top: 2px; }
+.wx-fc-strip-min { font-size: .72rem; opacity: .5; }
+
+/* ═══ RAIN HIGHLIGHT ═══ */
+.wx-rain-highlight {
+  background: linear-gradient(135deg,#0ea5e9,#0369a1);
+  border-radius: 18px;
+  padding: 1.1rem 1.4rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.wx-rain-highlight-label { font-size: .66rem; opacity: .75; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+.wx-rain-highlight-val { font-size: 1.5rem; font-weight: 800; }
+.wx-rain-highlight-badge { background: rgba(255,255,255,.18); border-radius: 10px; padding: 5px 11px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+
+/* ═══ STATS GRID ═══ */
+.wx-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.wx-stat-card {
+  background: rgba(255,255,255,.11);
+  backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255,255,255,.18);
+  border-radius: var(--wx-r);
+  padding: 1.2rem 1.3rem;
+  color: #fff;
+  transition: background .2s, transform .2s;
+  position: relative;
+  overflow: hidden;
+}
+.wx-stat-card:hover { background: rgba(255,255,255,.18); transform: translateY(-3px); }
+.wx-stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 0 0 var(--wx-r) var(--wx-r);
+  background: var(--stat-accent, rgba(255,255,255,.25));
+}
+.wx-stat-icon { font-size: 1.4rem; margin-bottom: .6rem; }
+.wx-stat-label { font-size: .63rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 4px; }
+.wx-stat-value { font-size: 1.55rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+.wx-stat-unit { font-size: .75rem; font-weight: 400; opacity: .6; }
+.wx-stat-sub { font-size: .72rem; color: rgba(255,255,255,.5); margin-top: 4px; }
+
+/* Progress bar */
+.wx-prog { height: 4px; border-radius: 2px; background: rgba(255,255,255,.15); overflow: hidden; margin-top: 8px; }
+.wx-prog-fill { height: 100%; border-radius: 2px; background: var(--stat-accent, rgba(255,255,255,.5)); transition: width .8s ease; }
+
+/* ═══ HOURLY SCROLL ═══ */
+.wx-section-label {
+  font-size: .63rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+  margin-bottom: .85rem;
+}
+.wx-hourly-wrap {
+  background: rgba(255,255,255,.1);
+  backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255,255,255,.16);
+  border-radius: var(--wx-r);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+}
+#wx-hourly-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+#wx-hourly-scroll::-webkit-scrollbar { display: none; }
+.wx-hour-card {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-align: center;
+  color: #fff;
+  flex-shrink: 0;
+  min-width: 70px;
+  transition: all .2s;
+}
+.wx-hour-card:hover, .wx-hour-card.now {
+  background: rgba(255,255,255,.24);
+  border-color: rgba(255,255,255,.5);
+  transform: translateY(-2px);
+}
+.wx-hour-time { font-size: .68rem; font-weight: 700; opacity: .7; margin-bottom: 5px; }
+.wx-hour-icon { width: 36px; height: 36px; }
+.wx-hour-temp { font-size: .95rem; font-weight: 800; margin-top: 3px; }
+.wx-hour-pop { font-size: .62rem; opacity: .55; margin-top: 1px; }
+
+/* ═══ AI CARD ═══ */
+.wx-ai-card {
+  background: linear-gradient(135deg, rgba(99,102,241,.18), rgba(139,92,246,.14), rgba(14,165,233,.12));
+  backdrop-filter: blur(24px);
+  border: 1.5px solid rgba(139,92,246,.28);
+  border-radius: var(--wx-r-lg);
+  padding: 1.6rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+.wx-ai-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.wx-ai-badge-row { display: flex; align-items: center; gap: 12px; }
+.wx-ai-orb { width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(135deg,#8b5cf6,#0ea5e9); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+.wx-ai-powered { font-size: .6rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #c4b5fd; }
+.wx-ai-title { font-size: .95rem; font-weight: 800; }
+.wx-ai-btn {
+  background: linear-gradient(135deg,#8b5cf6,#0ea5e9);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: .85rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--wx-font);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: opacity .2s, transform .2s;
+}
+.wx-ai-btn:hover { opacity: .88; transform: translateY(-1px); }
+.wx-ai-section { margin-top: .75rem; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: .9rem 1rem; }
+.wx-ai-section-label { font-size: .6rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #c4b5fd; margin-bottom: .5rem; }
+.wx-ai-section ul { margin: 0; padding-left: 1.2rem; }
+.wx-ai-section li { font-size: .875rem; color: rgba(255,255,255,.85); line-height: 1.8; }
+
+/* ═══ AQI CARD ═══ */
+.wx-aqi-card {
+  background: rgba(255,255,255,.1);
+  backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255,255,255,.16);
+  border-radius: var(--wx-r);
+  padding: 1.3rem 1.4rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+.wx-aqi-bar { height: 8px; border-radius: 4px; background: linear-gradient(to right,#22c55e 0%,#f59e0b 50%,#ef4444 100%); position: relative; margin: 8px 0 4px; }
+.wx-aqi-dot { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2.5px solid rgba(0,0,0,.3); position: absolute; top: 50%; transform: translateY(-50%); transition: left .6s ease; }
+.wx-aqi-components { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 1rem; }
+.wx-aqi-comp { background: rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; }
+.wx-aqi-comp-name { font-size: .65rem; color: rgba(255,255,255,.5); font-weight: 600; }
+.wx-aqi-comp-val { font-size: .9rem; font-weight: 800; }
+
+/* ═══ VISUAL CONDITION CARD ═══ */
+.wx-cond-card {
+  background: rgba(255,255,255,.1);
+  backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255,255,255,.16);
+  border-radius: var(--wx-r);
+  padding: 1.4rem;
+  margin-bottom: 1rem;
+  color: #fff;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: center;
+}
+.wx-cond-label-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .65rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: rgba(255,255,255,.15); margin-bottom: .5rem; }
+.wx-cond-title { font-size: 1.1rem; font-weight: 800; margin-bottom: .5rem; }
+.wx-cond-desc { font-size: .82rem; line-height: 1.7; opacity: .75; margin-bottom: .8rem; }
+.wx-cond-tips { display: flex; flex-direction: column; gap: 5px; }
+.wx-cond-tip { display: flex; align-items: center; gap: 8px; font-size: .78rem; opacity: .75; }
+.wx-cond-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; opacity: .6; }
+
+/* ═══ MAP PROMO ═══ */
+.wx-map-promo {
+  background: linear-gradient(135deg, rgba(14,165,233,.18), rgba(16,185,129,.14));
+  backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(14,165,233,.25);
+  border-radius: var(--wx-r);
+  padding: 1.3rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+.wx-map-btn {
+  background: linear-gradient(135deg,#0ea5e9,#0284c7);
+  border: none;
+  border-radius: 12px;
+  padding: 11px 22px;
+  font-size: .875rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(14,165,233,.4);
+  transition: all .2s;
+  font-family: var(--wx-font);
+}
+.wx-map-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(14,165,233,.55); color: #fff; }
+
+/* ═══ GALERI ═══ */
+.wx-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(130px,1fr)); gap: 10px; margin-top: .75rem; }
+.wx-gallery-item { border-radius: 12px; overflow: hidden; aspect-ratio: 4/3; position: relative; cursor: pointer; }
+.wx-gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
+.wx-gallery-item:hover img { transform: scale(1.08); }
+.wx-gallery-overlay { position: absolute; inset: 0; background: linear-gradient(to top,rgba(0,0,0,.55),transparent); opacity: 0; transition: opacity .3s; display: flex; align-items: flex-end; padding: 8px; }
+.wx-gallery-item:hover .wx-gallery-overlay { opacity: 1; }
+
+/* ═══ EMPTY STATE ═══ */
+.wx-empty { max-width: 1060px; margin: 1.5rem auto 2rem; padding: 0 1.5rem; }
+
+/* ═══ EMPTY STATE — PREVIEW BANNER (selaras gaya Beranda, lebih transparan & blur dikurangi agar nyaman di mata) ═══ */
+.wx-preview-banner {
+  background: rgba(255,255,255,.07);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255,255,255,.16);
+  border-radius: 28px;
+  padding: 2.2rem;
+  margin-top: 1.75rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.wx-preview-banner::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(253,224,71,.12);
+  pointer-events: none;
+}
+
+.wx-preview-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 50px;
+  padding: 6px 16px;
+  font-size: .72rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.wx-preview-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 1rem;
+  letter-spacing: -.02em;
+}
+
+.wx-preview-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-bottom: 1rem;
+}
+.wx-preview-icon-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+.wx-preview-temp-dash {
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -.03em;
+}
+
+.wx-preview-desc {
+  font-size: .9rem;
+  color: rgba(255,255,255,.7);
+  line-height: 1.7;
+  max-width: 480px;
+  margin: 0 auto 1.5rem;
+}
+
+.wx-preview-stats-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.wx-preview-stat {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 14px;
+  padding: 10px 16px;
+  min-width: 84px;
+  text-align: center;
+}
+.wx-preview-stat-icon { font-size: 1.1rem; margin-bottom: 4px; }
+.wx-preview-stat-label { font-size: .65rem; color: rgba(255,255,255,.55); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+.wx-preview-stat-val { font-size: .95rem; font-weight: 800; color: #fff; }
+
+/* ═══ FADE IN ═══ */
+.wx-fade { opacity: 0; transform: translateY(18px); transition: opacity .5s ease, transform .5s ease; }
+.wx-fade.in { opacity: 1; transform: translateY(0); }
+
+/* ═══ WEATHER ANIMATIONS ═══ */
+.rain-drop { border-radius: 2px; animation: rain-fall linear infinite; }
+@keyframes rain-fall { 0%{opacity:0;transform:translateY(-20px) rotate(12deg)} 10%{opacity:1} 90%{opacity:.7} 100%{opacity:0;transform:translateY(110vh) rotate(12deg)} }
+.snow-flake { animation: snow-fall linear infinite; }
+@keyframes snow-fall { 0%{opacity:0;transform:translateY(-20px) translateX(0) rotate(0)} 10%{opacity:.9} 90%{opacity:.5} 100%{opacity:0;transform:translateY(110vh) translateX(var(--drift,20px)) rotate(360deg)} }
+.sun-ray { animation: sun-spin 28s linear infinite; transform-origin: top right; }
+@keyframes sun-spin { from{transform:rotate(var(--start,0deg))} to{transform:rotate(calc(var(--start,0deg) + 360deg))} }
+.sun-orb { animation: sun-pulse 5s ease-in-out infinite; }
+@keyframes sun-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.cloud-drift { animation: cloud-move linear infinite; }
+@keyframes cloud-move { from{transform:translateX(-300px)} to{transform:translateX(calc(100vw + 300px))} }
+.fog-layer { animation: fog-drift linear infinite; }
+@keyframes fog-drift { from{transform:translateX(-100%)} to{transform:translateX(100vw)} }
+.star-twinkle { border-radius: 50%; background: #fff; animation: star-anim ease-in-out infinite; }
+@keyframes star-anim { 0%,100%{opacity:var(--base,.6)} 50%{opacity:var(--peak,1)} }
+.lightning-flash { animation: lightning-anim var(--lp,4s) ease-in-out infinite var(--lo,0s); }
+@keyframes lightning-anim { 0%,93%,97%,100%{opacity:0} 94%{opacity:.18} 95%{opacity:0} 96%{opacity:.12} }
+.lightning-bolt { animation: bolt var(--lp,4s) ease-in-out infinite var(--lo,0s); transform-origin: top center; }
+@keyframes bolt { 0%,93%,97%,100%{opacity:0;transform:scaleY(0)} 94%{opacity:1;transform:scaleY(1)} 95%{opacity:0;transform:scaleY(1)} }
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px) {
+  .wx-stats-grid { grid-template-columns: repeat(2,1fr); }
+  .wx-temp-num { font-size: 4rem; }
+  .wx-headline { font-size: 1.8rem; }
+  .wx-cond-card { grid-template-columns: 1fr; }
+  .wx-hero-split { grid-template-columns: 1fr; }
+}
+@media(max-width:480px) {
+  .wx-stats-grid { grid-template-columns: 1fr 1fr; }
+  .wx-aqi-components { grid-template-columns: repeat(2,1fr); }
+}
+
+.footer {
+  position: relative;
+  z-index: 20;
+}
+
+.wx-empty {
+  padding-bottom: 4rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ BACKGROUND ══ -->
+<div class="wx-bg-wrap {% if cuaca %}
+  {% if bg_class == 'bg-clear' %}wx-clear
+  {% elif bg_class == 'bg-cloudy' %}wx-cloudy
+  {% elif bg_class == 'bg-rain' %}wx-rain
+  {% elif bg_class == 'bg-storm' %}wx-storm
+  {% elif bg_class == 'bg-snow' %}wx-snow
+  {% elif bg_class == 'bg-fog' %}wx-fog
+  {% elif bg_class == 'bg-night' %}wx-night
+  {% else %}wx-default{% endif %}
+{% else %}wx-default{% endif %}"
+  id="wx-bg"
+  {% if cuaca %}data-code="{{ weather_code }}" data-day="{{ is_day }}"{% endif %}>
+</div>
+
+<!-- ══ WEATHER ANIMATIONS ══ -->
+<div id="wx-anim"></div>
+
+<div class="wx-scroll">
+
+  <!-- ══ SEARCH ZONE ══ -->
+  <div class="wx-search-zone">
+    <p class="wx-eyebrow">Real-Time Weather Data</p>
+    <h1 class="wx-headline">Cari Info Cuaca</h1>
+    <p class="wx-subline">Data langsung dari seluruh dunia</p>
+
+    <form method="POST" id="search-form" autocomplete="off" style="position:relative;z-index:500;">
+      {% csrf_token %}
+      <input type="hidden" name="lat" id="kota-lat" value="">
+      <input type="hidden" name="lon" id="kota-lon" value="">
+
+      <div class="wx-searchbar">
+        <span class="wx-search-icon"><i class="fa fa-magnifying-glass"></i></span>
+        <div class="wx-ac-wrap">
+          <input type="text" name="kota" id="kota-input"
+            value="{{ kota }}"
+            placeholder="Ketik nama kota atau negara…"
+            required autocomplete="off">
+          <div id="wx-ac-list" style="display:none;"></div>
+        </div>
+        <button type="submit" class="wx-search-btn">
+          <i class="fa fa-magnifying-glass"></i> Cari
+        </button>
+      </div>
+    </form>
+
+    <!-- History -->
+    <div id="wx-history-wrap" style="display:none;" class="wx-history">
+      <span class="wx-hist-label">Riwayat</span>
+      <div id="wx-hist-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      <button onclick="clearWxHistory()" style="font-size:.7rem;color:rgba(255,255,255,.35);background:none;border:none;cursor:pointer;font-weight:600;margin-left:4px;">Hapus</button>
+    </div>
+  </div>
+
+  <!-- ══ ERRORS ══ -->
+  {% if error == 'subcity' %}
+  <div class="wx-error-wrap">
+    <div class="wx-error-box wx-error-warn">
+      <div class="wx-error-icon">⚠️</div>
+      <div style="flex:1;">
+        <p style="font-weight:800;color:#fde68a;margin-bottom:5px;">Lokasi ini tidak memiliki data cuaca</p>
+        <p style="font-size:.82rem;line-height:1.7;color:rgba(255,255,255,.8);">
+          <strong style="color:#fff;">"{{ kota }}"</strong> tidak ditemukan di data cuaca kami. Coba gunakan nama wilayah yang lebih spesifik, atau cari nama <strong>kota/kabupaten</strong> terdekat seperti <em style="color:#fde68a;">"Samarinda"</em> atau <em style="color:#fde68a;">"Balikpapan"</em>.
+        </p>
+        <a href="{% url 'peta_cuaca' %}?kota={{ kota|urlencode }}" style="display:inline-flex;align-items:center;gap:6px;margin-top:.7rem;background:rgba(56,189,248,.2);border:1px solid rgba(56,189,248,.35);border-radius:10px;padding:7px 14px;font-size:.8rem;font-weight:700;color:#7dd3fc;text-decoration:none;">🗺️ Lihat di Peta →</a>
+      </div>
+    </div>
+  </div>
+  {% elif error == 'notfound' %}
+  <div class="wx-error-wrap">
+    <div class="wx-error-box wx-error-danger">
+      <div class="wx-error-icon">🔍</div>
+      <div style="flex:1;">
+        <p style="font-weight:800;color:#fca5a5;margin-bottom:5px;">Kota tidak ditemukan</p>
+        <p style="font-size:.82rem;line-height:1.7;color:rgba(255,255,255,.8);">Tidak ada data cuaca untuk <strong style="color:#fff;">"{{ kota }}"</strong>. Pastikan ejaan benar dan gunakan nama kota atau kabupaten.</p>
+        <a href="{% url 'peta_cuaca' %}?kota={{ kota|urlencode }}" style="display:inline-flex;align-items:center;gap:6px;margin-top:.7rem;background:rgba(56,189,248,.2);border:1px solid rgba(56,189,248,.35);border-radius:10px;padding:7px 14px;font-size:.8rem;font-weight:700;color:#7dd3fc;text-decoration:none;">🗺️ Cari di Peta →</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ══ WEATHER RESULT ══ -->
+  {% if cuaca %}
+  <div class="wx-main">
+
+    <!-- ── HERO CARD ── -->
+    <div class="wx-hero-card wx-fade in">
+      <div class="wx-hero-top">
+        <div>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+            <span style="font-size:.9rem;opacity:.7;">📍</span>
+            <span class="wx-city-name">{{ cuaca.kota }}</span>
+          </div>
+          <p class="wx-city-meta">{{ cuaca.negara }} &middot; {{ tanggal_sekarang }}</p>
+        </div>
+      </div>
+
+      <div class="wx-temp-row">
+        <img src="https://openweathermap.org/img/wn/{{ cuaca.icon }}@2x.png"
+          alt="{{ cuaca.deskripsi }}" class="wx-temp-icon">
+        <div>
+          <div>
+            <span class="wx-temp-num">{{ cuaca.suhu }}</span><span class="wx-temp-unit">°C</span>
+          </div>
+          <p class="wx-desc-text">{{ cuaca.deskripsi }}</p>
+          <p class="wx-feels">Terasa seperti {{ cuaca.feels_like }}°C</p>
+        </div>
+      </div>
+
+      <div class="wx-minmax">
+        <span class="wx-minmax-badge">↑ {{ cuaca.suhu_max }}°C</span>
+        <span class="wx-minmax-badge">↓ {{ cuaca.suhu_min }}°C</span>
+        <span class="wx-minmax-badge">☁️ {{ cuaca.clouds }}% awan</span>
+      </div>
+
+      <div class="wx-hero-sunset-tag">
+        <div class="wx-hero-sunset-time">{{ cuaca.sunset }}</div>
+        <div class="wx-hero-sunset-label">Waktu terbenam</div>
+      </div>
+    </div>
+
+    <!-- ── MINI STATS + FORECAST STRIP (gaya referensi, tanpa diagram) ── -->
+    <div class="wx-hero-split">
+      <div class="wx-mini-stats-card wx-fade in" style="animation-delay:.04s;">
+        <div class="wx-mini-stat">
+          <span class="wx-mini-stat-icon">💧</span>
+          <div>
+            <div class="wx-mini-stat-label">Kelembapan</div>
+            <div class="wx-mini-stat-val">{{ cuaca.kelembaban }}%</div>
+          </div>
+        </div>
+        <div class="wx-mini-stat">
+          <span class="wx-mini-stat-icon">🔵</span>
+          <div>
+            <div class="wx-mini-stat-label">Tekanan</div>
+            <div class="wx-mini-stat-val">{{ cuaca.tekanan }} hPa</div>
+          </div>
+        </div>
+        <div class="wx-mini-stat">
+          <span class="wx-mini-stat-icon">🌅</span>
+          <div>
+            <div class="wx-mini-stat-label">Terbit</div>
+            <div class="wx-mini-stat-val">{{ cuaca.sunrise }}</div>
+          </div>
+        </div>
+        <div class="wx-mini-stat">
+          <span class="wx-mini-stat-icon">🌇</span>
+          <div>
+            <div class="wx-mini-stat-label">Terbenam</div>
+            <div class="wx-mini-stat-val">{{ cuaca.sunset }}</div>
+          </div>
+        </div>
+      </div>
+
+      {% if forecast %}
+      <div class="wx-fc-strip-card wx-fade in" style="animation-delay:.07s;">
+        <p class="wx-section-label" style="margin-bottom:0;">📅 Prakiraan 5 Hari</p>
+        <div class="wx-fc-strip-grid">
+          {% for f in forecast %}
+          <div class="wx-fc-strip-item">
+            <div class="wx-fc-strip-day">{{ f.hari }}</div>
+            <img src="https://openweathermap.org/img/wn/{{ f.icon }}@2x.png" alt="" class="wx-fc-strip-icon">
+            <div class="wx-fc-strip-max">{{ f.suhu_max }}°</div>
+            <div class="wx-fc-strip-min">{{ f.suhu_min }}°</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if hourly %}
+    <div class="wx-rain-highlight wx-fade in" style="animation-delay:.09s;">
+      <div>
+        <div class="wx-rain-highlight-label">Peluang Hujan Saat Ini</div>
+        <div class="wx-rain-highlight-val">{{ hourly.0.pop }}%</div>
+      </div>
+      <div class="wx-rain-highlight-badge">🌧 {{ hourly.0.jam }}</div>
+    </div>
+    {% endif %}
+
+    <!-- ── STATS GRID ── -->
+    <div class="wx-stats-grid">
+      <div class="wx-stat-card wx-fade in" style="--stat-accent:rgba(56,189,248,.7);animation-delay:.05s;">
+        <div class="wx-stat-icon">💧</div>
+        <div class="wx-stat-label">Kelembapan</div>
+        <div class="wx-stat-value">{{ cuaca.kelembaban }}<span class="wx-stat-unit">%</span></div>
+        <div class="wx-prog"><div class="wx-prog-fill" style="width:{{ cuaca.kelembaban }}%;"></div></div>
+        <div class="wx-stat-sub">{% if cuaca.kelembaban >= 80 %}Sangat lembap{% elif cuaca.kelembaban >= 60 %}Lembap{% elif cuaca.kelembaban >= 40 %}Nyaman{% else %}Kering{% endif %}</div>
+      </div>
+      <div class="wx-stat-card wx-fade in" style="--stat-accent:rgba(16,185,129,.7);animation-delay:.08s;">
+        <div class="wx-stat-icon">💨</div>
+        <div class="wx-stat-label">Kec. Angin</div>
+        <div class="wx-stat-value">{{ cuaca.angin }}<span class="wx-stat-unit"> km/h</span></div>
+        <div class="wx-stat-sub">Arah {{ cuaca.wind_dir|default:"—" }}</div>
+      </div>
+      <div class="wx-stat-card wx-fade in" style="--stat-accent:rgba(251,191,36,.7);animation-delay:.11s;">
+        <div class="wx-stat-icon">👁️</div>
+        <div class="wx-stat-label">Visibilitas</div>
+        <div class="wx-stat-value">{{ cuaca.visibilitas }}<span class="wx-stat-unit"> km</span></div>
+        <div class="wx-stat-sub">{% if cuaca.visibilitas >= 5 %}Sangat jelas{% elif cuaca.visibilitas >= 2 %}Jelas{% else %}Terbatas{% endif %}</div>
+      </div>
+      <div class="wx-stat-card wx-fade in" style="--stat-accent:rgba(99,102,241,.7);animation-delay:.14s;">
+        <div class="wx-stat-icon">🔵</div>
+        <div class="wx-stat-label">Tekanan</div>
+        <div class="wx-stat-value">{{ cuaca.tekanan }}<span class="wx-stat-unit"> hPa</span></div>
+        <div class="wx-stat-sub">{% if cuaca.tekanan >= 1013 %}Normal-tinggi{% else %}Normal-rendah{% endif %}</div>
+      </div>
+      <div class="wx-stat-card wx-fade in" style="--stat-accent:rgba(244,114,182,.7);animation-delay:.17s;">
+        <div class="wx-stat-icon">🌡️</div>
+        <div class="wx-stat-label">Titik Embun</div>
+        <div class="wx-stat-value">{{ cuaca.dew_point|default:"—" }}<span class="wx-stat-unit">°C</span></div>
+        <div class="wx-stat-sub">Berdasarkan kelembapan</div>
+      </div>
+      <div class="wx-stat-card wx-fade in" style="--stat-accent:rgba(251,146,60,.7);animation-delay:.2s;">
+        <div class="wx-stat-icon">☁️</div>
+        <div class="wx-stat-label">Tutupan Awan</div>
+        <div class="wx-stat-value">{{ cuaca.clouds }}<span class="wx-stat-unit">%</span></div>
+        <div class="wx-prog"><div class="wx-prog-fill" style="width:{{ cuaca.clouds }}%;--stat-accent:rgba(251,146,60,.7);background:rgba(251,146,60,.7);"></div></div>
+        <div class="wx-stat-sub">{% if cuaca.clouds >= 80 %}Mendung tebal{% elif cuaca.clouds >= 40 %}Berawan{% else %}Cerah berawan{% endif %}</div>
+      </div>
+    </div>
+
+    <!-- ── AI ANALYSIS ── -->
+    <div class="wx-ai-card wx-fade in" style="animation-delay:.12s;">
+      <div class="wx-ai-header">
+        <div class="wx-ai-badge-row">
+          <div class="wx-ai-orb">🤖</div>
+          <div>
+            <p class="wx-ai-powered">Powered by DeepSeek AI</p>
+            <p class="wx-ai-title">Analisis Cuaca — {{ cuaca.kota }}</p>
+          </div>
+        </div>
+        <button id="btn-analisis-ai" class="wx-ai-btn" onclick="muatAnalisisAI()">
+          ✨ Analisis AI
+        </button>
+      </div>
+      <div id="ai-loading" style="display:none;text-align:center;color:rgba(255,255,255,.5);font-size:.82rem;padding:.8rem;">
+        🤖 AI sedang menganalisis cuaca…
+      </div>
+      <div id="ai-result" style="display:none;">
+        <div id="ai-content"></div>
+      </div>
+    </div>
+
+    <!-- ── HOURLY ── -->
+    {% if hourly %}
+    <div class="wx-hourly-wrap wx-fade in" style="animation-delay:.15s;">
+      <p class="wx-section-label">🕐 Prakiraan Per Jam — 24 Jam ke Depan</p>
+      <div id="wx-hourly-scroll">
+        {% for h in hourly %}
+        <div class="wx-hour-card {% if forloop.first %}now{% endif %}">
+          <p class="wx-hour-time">{{ h.jam }}</p>
+          <img src="https://openweathermap.org/img/wn/{{ h.icon }}@2x.png" alt="" class="wx-hour-icon">
+          <p class="wx-hour-temp">{{ h.suhu }}°</p>
+          <p class="wx-hour-pop">{{ h.pop }}% 🌧</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── AQI ── -->
+    {% if air_quality %}
+    <div class="wx-aqi-card wx-fade in" style="animation-delay:.2s;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;flex-wrap:wrap;gap:8px;">
+        <p class="wx-section-label" style="margin-bottom:0;">🍃 Kualitas Udara (AQI)</p>
+        <span style="font-size:.75rem;font-weight:800;padding:3px 12px;border-radius:20px;background:rgba(255,255,255,.12);">{{ air_quality.label }}</span>
+      </div>
+      <div class="wx-aqi-bar">
+        <div class="wx-aqi-dot" style="left:calc({{ air_quality.percent }}% - 7px);"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.65rem;opacity:.45;">
+        <span>Baik</span><span>Sedang</span><span>Tidak Sehat</span>
+      </div>
+      {% if air_quality.components %}
+      <div class="wx-aqi-components">
+        {% for c in air_quality.components %}
+        <div class="wx-aqi-comp">
+          <div class="wx-aqi-comp-name">{{ c.name }}</div>
+          <div class="wx-aqi-comp-val">{{ c.value }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── VISUAL CONDITION ── -->
+    {% if weather_visual %}
+    <div class="wx-cond-card wx-fade in" style="animation-delay:.22s;">
+      <div>
+        <span class="wx-cond-label-tag" style="color:#fff;">🌐 Kondisi Cuaca</span>
+        <h3 class="wx-cond-title">{{ weather_visual.label }} di {{ cuaca.kota }}</h3>
+        <p class="wx-cond-desc">{{ weather_visual.desc }}</p>
+        <div class="wx-cond-tips">
+          {% for tip in weather_visual.tips %}
+          <div class="wx-cond-tip" style="color:{{ weather_visual.color }};">
+            <div class="wx-cond-dot"></div>
+            <span style="color:rgba(255,255,255,.75);">{{ tip }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;align-items:center;flex-shrink:0;">
+        {% if weather_visual.svg_key == 'clear' %}
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;">
+          <circle cx="70" cy="70" r="48" fill="rgba(251,191,36,.1)"/>
+          <circle cx="70" cy="70" r="32" fill="#fcd34d" class="sun-orb"/>
+          <g stroke="#fde68a" stroke-width="2.5" stroke-linecap="round" style="animation:sun-spin 14s linear infinite;transform-origin:70px 70px;">
+            <line x1="70" y1="20" x2="70" y2="10"/><line x1="70" y1="120" x2="70" y2="130"/>
+            <line x1="20" y1="70" x2="10" y2="70"/><line x1="120" y1="70" x2="130" y2="70"/>
+            <line x1="34" y1="34" x2="27" y2="27"/><line x1="106" y1="106" x2="113" y2="113"/>
+            <line x1="34" y1="106" x2="27" y2="113"/><line x1="106" y1="34" x2="113" y2="27"/>
+          </g>
+        </svg>
+        {% elif weather_visual.svg_key == 'rain' %}
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;">
+          <ellipse cx="70" cy="58" rx="52" ry="30" fill="#64748b"/>
+          <ellipse cx="46" cy="66" rx="34" ry="25" fill="#475569"/>
+          <ellipse cx="98" cy="64" rx="30" ry="22" fill="#475569"/>
+          <g style="animation:fall 1.4s linear infinite;">
+            <line x1="48" y1="92" x2="42" y2="108" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="66" y1="98" x2="60" y2="114" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="84" y1="92" x2="78" y2="108" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="102" y1="98" x2="96" y2="114" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/>
+          </g>
+        </svg>
+        {% elif weather_visual.svg_key == 'storm' %}
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;">
+          <ellipse cx="70" cy="55" rx="54" ry="31" fill="#374151"/>
+          <ellipse cx="45" cy="64" rx="36" ry="25" fill="#1f2937"/>
+          <ellipse cx="100" cy="62" rx="32" ry="23" fill="#1f2937"/>
+          <polygon points="76,74 64,94 72,94 60,120 87,90 76,90 90,74" fill="#fde047" style="animation:twinkle 1.1s ease-in-out infinite;"/>
+        </svg>
+        {% elif weather_visual.svg_key == 'snow' %}
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;">
+          <ellipse cx="70" cy="57" rx="50" ry="29" fill="#bfdbfe"/>
+          <ellipse cx="46" cy="65" rx="33" ry="23" fill="#dbeafe"/>
+          <ellipse cx="98" cy="63" rx="30" ry="21" fill="#dbeafe"/>
+          <g fill="#93c5fd" style="animation:fall 2.2s linear infinite;">
+            <circle cx="48" cy="92" r="3"/><circle cx="66" cy="100" r="3"/>
+            <circle cx="84" cy="92" r="3"/><circle cx="102" cy="100" r="3"/>
+          </g>
+        </svg>
+        {% elif weather_visual.svg_key == 'fog' %}
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;">
+          <rect x="14" y="46" width="112" height="8" rx="4" fill="#94a3b8" opacity=".65"/>
+          <rect x="22" y="66" width="96" height="8" rx="4" fill="#94a3b8" opacity=".6"/>
+          <rect x="10" y="86" width="120" height="8" rx="4" fill="#94a3b8" opacity=".65"/>
+          <rect x="18" y="106" width="104" height="8" rx="4" fill="#94a3b8" opacity=".6"/>
+        </svg>
+        {% else %}
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;">
+          <ellipse cx="70" cy="62" rx="54" ry="34" fill="#94a3b8"/>
+          <ellipse cx="46" cy="72" rx="38" ry="27" fill="#cbd5e1"/>
+          <ellipse cx="100" cy="68" rx="34" ry="25" fill="#cbd5e1"/>
+          <ellipse cx="70" cy="44" rx="38" ry="24" fill="#94a3b8"/>
+        </svg>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── GALERI ── -->
+    {% if galeri_related %}
+    <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(20px);border:1.5px solid rgba(255,255,255,.16);border-radius:var(--wx-r);padding:1.3rem 1.4rem;margin-bottom:1rem;" class="wx-fade in" style="animation-delay:.24s;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px;">
+        <div>
+          <p class="wx-section-label" style="margin-bottom:2px;">📸 Galeri Komunitas</p>
+          <p style="font-size:.88rem;font-weight:700;color:#fff;">Foto Cuaca {{ weather_visual.label|default:"" }} · {{ cuaca.kota }}</p>
+        </div>
+        <a href="{% url 'galeri_list' %}" style="font-size:.78rem;color:rgba(56,189,248,.9);font-weight:700;">Lihat Semua →</a>
+      </div>
+      <div class="wx-gallery-grid">
+        {% for g in galeri_related %}
+        <div class="wx-gallery-item">
+          <img src="{{ g.gambar.url }}" alt="{{ g.judul }}" loading="lazy">
+          <div class="wx-gallery-overlay">
+            <p style="font-size:.7rem;color:#fff;font-weight:700;line-height:1.3;">{{ g.judul|truncatechars:40 }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── MAP PROMO ── -->
+    <div class="wx-map-promo wx-fade in" style="animation-delay:.26s;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#0ea5e9,#10b981);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">🗺️</div>
+        <div>
+          <p class="wx-section-label" style="color:#7dd3fc;margin-bottom:2px;">Peta Cuaca Interaktif</p>
+          <p style="font-size:.95rem;font-weight:800;color:#fff;">Lihat <strong>{{ cuaca.kota }}</strong> di Peta</p>
+          <p style="font-size:.78rem;color:rgba(255,255,255,.55);margin-top:1px;">Layer suhu, hujan, awan & angin</p>
+        </div>
+      </div>
+      <a href="{% url 'peta_cuaca' %}?kota={{ cuaca.kota }}" class="wx-map-btn">🗺️ Buka Peta →</a>
+    </div>
+
+  </div>
+
+  {% else %}
+  <!-- ══ EMPTY STATE ══ -->
+  <div class="wx-empty">
+
+    <!-- ── PREVIEW BANNER (beda dari beranda) ── -->
+    <div class="wx-preview-banner wx-fade in" style="animation-delay:.05s;">
+      <span class="wx-preview-eyebrow">Contoh Tampilan</span>
+
+      <div class="wx-preview-icon-row">
+        <div class="wx-preview-icon-circle">⛅</div>
+        <div class="wx-preview-temp-dash">--<span style="font-size:1.4rem;opacity:.6;">°C</span></div>
+      </div>
+      <p class="wx-preview-desc">Cari nama kota di atas untuk lihat suhu, kelembapan, angin, prakiraan 5 hari, dan analisis AI secara real-time.</p>
+
+      <div class="wx-preview-stats-row">
+        <div class="wx-preview-stat">
+          <div class="wx-preview-stat-icon">💧</div>
+          <div class="wx-preview-stat-label">Lembap</div>
+          <div class="wx-preview-stat-val">--%</div>
+        </div>
+        <div class="wx-preview-stat">
+          <div class="wx-preview-stat-icon">💨</div>
+          <div class="wx-preview-stat-label">Angin</div>
+          <div class="wx-preview-stat-val">-- km/h</div>
+        </div>
+        <div class="wx-preview-stat">
+          <div class="wx-preview-stat-icon">🔵</div>
+          <div class="wx-preview-stat-label">Tekanan</div>
+          <div class="wx-preview-stat-val">-- hPa</div>
+        </div>
+        <div class="wx-preview-stat">
+          <div class="wx-preview-stat-icon">🌅</div>
+          <div class="wx-preview-stat-label">Terbit</div>
+          <div class="wx-preview-stat-val">--:--</div>
+        </div>
+        <div class="wx-preview-stat">
+          <div class="wx-preview-stat-icon">🌇</div>
+          <div class="wx-preview-stat-label">Terbenam</div>
+          <div class="wx-preview-stat-val">--:--</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+</div><!-- /wx-scroll -->
+<!-- Footer custom dihapus — sudah pakai footer standar dari base.html -->
+
+{% block extra_js %}
+<script>
+// ── 1. AUTOCOMPLETE ───────────────────────────────────────────
+(function(){
+  const input  = document.getElementById('kota-input');
+  const list   = document.getElementById('wx-ac-list');
+  const latFld = document.getElementById('kota-lat');
+  const lonFld = document.getElementById('kota-lon');
+  const formEl = document.getElementById('search-form');
+  if(!input||!list) return;
+
+  let timer,idx=-1,items=[];
+
+  input.addEventListener('input',function(){
+    latFld.value=''; lonFld.value='';
+    clearTimeout(timer);
+    const q=this.value.trim();
+    if(q.length<1){list.style.display='none';formEl?.classList.remove('ac-open');return;}
+    timer=setTimeout(()=>
+      fetch(`/api/autocomplete-kota/?q=${encodeURIComponent(q)}`)
+        .then(r=>r.json())
+        .then(d=>{
+          items=d.results||[];
+          const qLow=q.toLowerCase();
+          items=items.filter(i=>i.kota.toLowerCase().includes(qLow)||(i.display&&i.display.toLowerCase().includes(qLow)));
+          render();
+        })
+    ,300);
+  });
+
+  function render(){
+    if(!items.length){list.style.display='none';formEl?.classList.remove('ac-open');return;}
+    list.innerHTML=''; idx=-1;
+    items.forEach((item,i)=>{
+      const div=document.createElement('div');
+      div.className='wx-ac-item';
+      const flag=item.negara==='ID'?'🇮🇩':item.negara==='US'?'🇺🇸':item.negara==='GB'?'🇬🇧':item.negara==='AU'?'🇦🇺':item.negara==='JP'?'🇯🇵':item.negara==='SG'?'🇸🇬':item.negara==='MY'?'🇲🇾':'📍';
+      const sub=item.display&&item.display.includes('—')?item.display.split('—').slice(1).join('—').trim():'';
+      const warn=item.is_subcity?`<span style="font-size:.62rem;background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:5px;padding:1px 5px;margin-left:auto;">⚠️ Tanpa cuaca</span>`:'';
+      div.innerHTML=`<span style="font-size:1rem;">${flag}</span><div style="flex:1;min-width:0;"><div class="wx-ac-main">${item.kota}</div>${sub?`<div class="wx-ac-sub">${sub}</div>`:''}</div>${warn}`;
+      div.addEventListener('mousedown',e=>{e.preventDefault();pick(item);});
+      list.appendChild(div);
+    });
+    list.style.display='block';
+    formEl?.classList.add('ac-open');
+  }
+
+  function pick(item){
+    // item.display sudah dirapikan di backend, contoh:
+    // "Taiwan, — Negara" / "Taiwan, Dubai — UEA" / "Samarinda, Kalimantan Timur — Indonesia"
+    // Ambil nama kota + keterangan singkat (bagian setelah koma pertama)
+    // supaya lokasi dengan nama sama tetap bisa dibedakan di judul hasil.
+    let labelForInput = item.kota;
+    if (item.display && item.display.includes(',')) {
+      const afterComma = item.display.split(',').slice(1).join(',').trim();
+      const keterangan = afterComma.replace(/—/g, ' ').replace(/\s+/g, ' ').trim();
+      if (keterangan) labelForInput = `${item.kota}, ${keterangan}`;
+    }
+    input.value = labelForInput;
+    list.style.display='none';
+    formEl?.classList.remove('ac-open');
+    if(item.lat!=null&&item.lon!=null&&!item.is_subcity){
+      latFld.value=item.lat; lonFld.value=item.lon;
+    } else {
+      // Pastikan lat/lon kosong jika sub-kota, supaya backend
+      // tidak salah pakai koordinat dari pilihan sebelumnya.
+      latFld.value=''; lonFld.value='';
+    }
+    document.getElementById('search-form').submit();
+  }
+
+  input.addEventListener('keydown',function(e){
+    const ds=list.querySelectorAll('.wx-ac-item');
+    if(!ds.length) return;
+    if(e.key==='ArrowDown'){e.preventDefault();idx=Math.min(idx+1,ds.length-1);ds.forEach((d,i)=>{d.classList.toggle('sel',i===idx);if(i===idx)input.value=items[i].kota;});}
+    else if(e.key==='ArrowUp'){e.preventDefault();idx=Math.max(idx-1,-1);ds.forEach((d,i)=>{d.classList.toggle('sel',i===idx);if(i===idx)input.value=items[i].kota;});}
+    else if(e.key==='Enter'&&idx>=0){e.preventDefault();pick(items[idx]);}
+    else if(e.key==='Escape'){list.style.display='none';formEl?.classList.remove('ac-open');}
+  });
+  document.addEventListener('click',e=>{if(!list.contains(e.target)&&e.target!==input){list.style.display='none';formEl?.classList.remove('ac-open');}});
+})();
+
+// ── 2. RIWAYAT ────────────────────────────────────────────────
+const WX_HIST_KEY='sw_search_history';
+function getHistory(){try{return JSON.parse(localStorage.getItem(WX_HIST_KEY))||[];}catch{return[];}}
+function saveHistory(kota){if(!kota||kota.trim().length<2)return;let h=getHistory();h=h.filter(k=>k.toLowerCase()!==kota.toLowerCase());h.unshift(kota.trim());if(h.length>7)h=h.slice(0,7);localStorage.setItem(WX_HIST_KEY,JSON.stringify(h));}
+function removeWxHistory(kota){let h=getHistory().filter(k=>k.toLowerCase()!==kota.toLowerCase());localStorage.setItem(WX_HIST_KEY,JSON.stringify(h));renderWxHistory();}
+function clearWxHistory(){localStorage.removeItem(WX_HIST_KEY);renderWxHistory();}
+function renderWxHistory(){
+  const wrap=document.getElementById('wx-history-wrap');
+  const chips=document.getElementById('wx-hist-chips');
+  if(!wrap||!chips) return;
+  const h=getHistory();
+  if(!h.length){wrap.style.display='none';return;}
+  wrap.style.display='flex';
+  chips.innerHTML=h.map(k=>`<span class="wx-hist-chip" onclick="searchWxKota('${k.replace(/'/g,"\\'")}')">🕐 ${k}<span class="wx-hist-del" onclick="event.stopPropagation();removeWxHistory('${k.replace(/'/g,"\\'")}')">✕</span></span>`).join('');
+}
+function searchWxKota(kota){document.getElementById('kota-input').value=kota;document.getElementById('kota-lat').value='';document.getElementById('kota-lon').value='';document.getElementById('search-form').submit();}
+{% if cuaca %}saveHistory('{{ cuaca.kota }}');{% endif %}
+renderWxHistory();
+
+// ── 3. FADE-UP OBSERVER ──────────────────────────────────────
+const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');}),{threshold:.1});
+document.querySelectorAll('.wx-fade').forEach(el=>io.observe(el));
+
+// ── 4. FAVORIT TOGGLE ────────────────────────────────────────
+function showWxToast(msg,type){
+  let wrap=document.querySelector('.messages-wrap');
+  if(!wrap){wrap=document.createElement('div');wrap.className='messages-wrap';document.body.appendChild(wrap);}
+  const t=document.createElement('div');
+  t.className=`toast ${type==='error'?'t-error':type==='success'?'t-success':'t-info'}`;
+  const ic=type==='error'?'fa-circle-xmark':type==='success'?'fa-circle-check':'fa-circle-info';
+  t.innerHTML=`<i class="fa ${ic}" style="font-size:1.1rem;"></i> ${msg}`;
+  wrap.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+// ── 5. AI ANALYSIS ───────────────────────────────────────────
+let aiLoaded=false;
+function muatAnalisisAI(){
+  if(aiLoaded) return;
+  const btn=document.getElementById('btn-analisis-ai');
+  const loading=document.getElementById('ai-loading');
+  const result=document.getElementById('ai-result');
+  const content=document.getElementById('ai-content');
+  btn.disabled=true; btn.innerHTML='⏳ Memuat…';
+  loading.style.display='block';
+  const params=new URLSearchParams({
+    kota:'{{ cuaca.kota }}',suhu:'{{ cuaca.suhu }}',feels_like:'{{ cuaca.feels_like }}',
+    kelembaban:'{{ cuaca.kelembaban }}',angin:'{{ cuaca.angin }}'.replace(',','.'),
+    deskripsi:'{{ cuaca.deskripsi }}',negara:'{{ cuaca.negara }}',clouds:'{{ cuaca.clouds }}',
+    {% if aqi_data %}aqi_label:'{{ aqi_data.label }}',aqi_val:'{{ aqi_data.aqi }}',{% endif %}
+  });
+  fetch(`/api/rekomendasi-ai/?${params}`).then(r=>r.json()).then(d=>{
+    loading.style.display='none';
+    if(d.result){
+      const r=d.result; let html='';
+      if(r.aktivitas) html+=`<div class="wx-ai-section"><div class="wx-ai-section-label">🏃 Rekomendasi Aktivitas</div><ul>${r.aktivitas.map(a=>`<li>${a}</li>`).join('')}</ul></div>`;
+      if(r.tips_pakaian) html+=`<div class="wx-ai-section" style="margin-top:.75rem;"><div class="wx-ai-section-label">👕 Tips Berpakaian</div><ul>${r.tips_pakaian.map(t=>`<li>${t}</li>`).join('')}</ul></div>`;
+      content.innerHTML=html; result.style.display='block';
+      btn.innerHTML='✅ Selesai'; aiLoaded=true;
+    }
+  }).catch(()=>{loading.style.display='none';btn.disabled=false;btn.innerHTML='✨ Analisis AI';});
+}
+
+// ── 6. WEATHER ANIMATIONS ────────────────────────────────────
+(function(){
+  const layer=document.getElementById('wx-anim');
+  if(!layer) return;
+  const bgEl=document.getElementById('wx-bg');
+  const code=bgEl?parseInt(bgEl.dataset.code||'0'):0;
+  const isDay=bgEl?parseInt(bgEl.dataset.day||'1'):1;
+  if(!code) return;
+
+  let fx='clear';
+  if(code>=200&&code<300) fx='storm';
+  else if(code>=300&&code<400) fx='drizzle';
+  else if(code>=500&&code<600) fx='rain';
+  else if(code>=600&&code<700) fx='snow';
+  else if(code>=700&&code<800) fx='fog';
+  else if(code===800) fx=isDay?'clear':'night';
+  else if(code>=801&&code<=804) fx='cloudy';
+
+  const rand=(mn,mx)=>Math.random()*(mx-mn)+mn;
+
+  function spawnRain(heavy){
+    const n=heavy?110:55;
+    for(let i=0;i<n;i++){
+      const d=document.createElement('div');
+      const dur=heavy?rand(.5,.8):rand(.65,1.0);
+      d.style.cssText=`position:absolute;left:${rand(-5,105)}%;top:${rand(-20,0)}%;width:${heavy?rand(1,1.8):rand(1.5,2.2)}px;height:${heavy?rand(16,28):rand(10,20)}px;border-radius:2px;background:linear-gradient(to bottom,rgba(147,197,253,0),rgba(147,197,253,${heavy?.88:.7}));animation:rain-fall ${dur}s linear ${rand(0,dur*2)}s infinite;transform:rotate(${heavy?14:10}deg);`;
+      layer.appendChild(d);
+    }
+    if(heavy){const o=document.createElement('div');o.style.cssText='position:absolute;inset:0;background:rgba(15,23,42,.3);pointer-events:none;';layer.appendChild(o);}
+  }
+
+  function spawnStorm(){
+    spawnRain(true);
+    for(let i=0;i<3;i++){const f=document.createElement('div');const p=rand(4,9);f.style.cssText=`position:absolute;inset:0;background:rgba(139,92,246,.1);animation:lightning-anim ${p}s ease-in-out ${rand(0,6)}s infinite;pointer-events:none;`;layer.appendChild(f);}
+    for(let i=0;i<2;i++){const b=document.createElement('div');const p=rand(5,10);b.style.cssText=`position:absolute;left:${rand(20,80)}%;top:0;width:2px;height:${rand(80,150)}px;background:linear-gradient(to bottom,rgba(233,213,255,.9),rgba(124,58,237,.5),transparent);animation:bolt ${p}s ease-in-out ${rand(1,8)}s infinite;transform-origin:top center;`;layer.appendChild(b);}
+    const o=document.createElement('div');o.style.cssText='position:absolute;inset:0;background:rgba(10,10,30,.4);pointer-events:none;';layer.appendChild(o);
+  }
+
+  function spawnSnow(){
+    const fl=['❄','✦','·','∗','❅'];
+    for(let i=0;i<55;i++){
+      const f=document.createElement('div');
+      const sz=rand(10,20),dur=rand(4,9),dr=rand(-40,40);
+      f.style.cssText=`position:absolute;left:${rand(-5,105)}%;top:${rand(-20,0)}%;font-size:${sz}px;color:rgba(255,255,255,${rand(.5,.85)});--drift:${dr}px;animation:snow-fall ${dur}s linear ${rand(0,dur)}s infinite;user-select:none;`;
+      f.textContent=fl[Math.floor(Math.random()*fl.length)];
+      layer.appendChild(f);
+    }
+  }
+
+  function spawnFog(){
+    for(let i=0;i<5;i++){
+      const fg=document.createElement('div');
+      const dur=rand(18,30);
+      fg.style.cssText=`position:absolute;left:-25%;top:${rand(10,75)}%;width:60%;height:${rand(80,150)}px;background:radial-gradient(ellipse at center,rgba(203,213,225,.2) 0%,transparent 100%);border-radius:50%;animation:fog-drift ${dur}s linear ${rand(0,15)}s infinite;filter:blur(18px);`;
+      layer.appendChild(fg);
+    }
+    const o=document.createElement('div');o.style.cssText='position:absolute;inset:0;background:rgba(226,232,240,.1);pointer-events:none;';layer.appendChild(o);
+  }
+
+  function spawnClear(){
+    const orb=document.createElement('div');
+    orb.style.cssText='position:absolute;top:-8%;right:-4%;width:300px;height:300px;background:radial-gradient(circle,rgba(251,191,36,.2) 0%,transparent 70%);border-radius:50%;animation:sun-pulse 5s ease-in-out infinite;';
+    layer.appendChild(orb);
+    for(let i=0;i<8;i++){const r=document.createElement('div');const a=i*45;r.style.cssText=`position:absolute;top:0;right:0;width:4px;height:270px;background:linear-gradient(to bottom,rgba(251,191,36,.15),transparent);transform-origin:top right;--start:${a}deg;animation:sun-spin 26s linear infinite;transform:rotate(${a}deg);`;layer.appendChild(r);}
+  }
+
+  function spawnNight(){
+    for(let i=0;i<48;i++){const s=document.createElement('div');const sz=rand(1.5,3.5),bo=rand(.3,.7);s.style.cssText=`position:absolute;left:${rand(0,100)}%;top:${rand(0,65)}%;width:${sz}px;height:${sz}px;border-radius:50%;background:#fff;--base:${bo};--peak:${Math.min(bo+.4,1)};animation:star-anim ${rand(2,5)}s ease-in-out ${rand(0,4)}s infinite;`;layer.appendChild(s);}
+    const m=document.createElement('div');m.style.cssText='position:absolute;top:5%;right:8%;width:66px;height:66px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(254,240,138,.88),rgba(253,224,71,.55) 50%,transparent 75%);box-shadow:0 0 28px rgba(253,224,71,.28);animation:sun-pulse 6s ease-in-out infinite;';layer.appendChild(m);
+  }
+
+  function spawnCloudy(){
+    [{w:210,h:75,t:8,dl:0,dr:34},{w:150,h:56,t:16,dl:-12,dr:26},{w:260,h:86,t:5,dl:-20,dr:40}].forEach(c=>{
+      const cl=document.createElement('div');
+      cl.style.cssText=`position:absolute;top:${c.t}%;left:-${c.w}px;width:${c.w}px;height:${c.h}px;background:rgba(255,255,255,.08);border-radius:50%;filter:blur(20px);animation:cloud-drift ${c.dr}s linear ${c.dl}s infinite;`;
+      layer.appendChild(cl);
+    });
+  }
+
+  switch(fx){
+    case 'rain': spawnRain(false); break;
+    case 'storm': spawnStorm(); break;
+    case 'drizzle': spawnRain(false); break;
+    case 'snow': spawnSnow(); break;
+    case 'fog': spawnFog(); break;
+    case 'clear': spawnClear(); break;
+    case 'night': spawnNight(); break;
+    case 'cloudy': spawnCloudy(); break;
+  }
+})();
+</script>
+{% endblock %}
+
+{% endblock %}

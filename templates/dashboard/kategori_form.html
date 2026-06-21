@@ -1,0 +1,365 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}{{ action|default:"Tambah" }} Kategori — Dashboard SkyWise AI{% endblock %}
+{% block topbar_title %}{{ action|default:"Tambah" }} Kategori{% endblock %}
+
+{% block extra_css %}
+<style>
+.katform-page { animation: kfFade .4s ease; }
+@keyframes kfFade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Back link ──────────────────────────────────── */
+.katform-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .83rem;
+  font-weight: 600;
+  color: #0284c7;
+  text-decoration: none;
+  margin-bottom: 22px;
+  transition: .15s;
+}
+.katform-back:hover { gap: 10px; }
+
+/* ── Layout ─────────────────────────────────────── */
+.katform-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 860px) { .katform-layout { grid-template-columns: 1fr; } }
+
+/* ── Card dasar ─────────────────────────────────── */
+.kf-card {
+  background: #fff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px -8px rgba(15,23,42,.08);
+  overflow: hidden;
+}
+.kf-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1.5px solid #f1f5f9;
+  background: #fafcff;
+}
+.kf-card-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+.kf-icon-form  { background: #e0f2fe; color: #0284c7; }
+.kf-icon-info  { background: #eef2ff; color: #4f46e5; }
+.kf-card-header-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; }
+.kf-card-header-sub   { font-size: .78rem; color: #94a3b8; margin: 2px 0 0; }
+
+/* ── Form body ──────────────────────────────────── */
+.kf-form-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kf-field { display: flex; flex-direction: column; gap: 7px; }
+.kf-label {
+  font-size: .8rem;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.kf-req { color: #ef4444; }
+
+.kf-input-wrap { position: relative; }
+.kf-input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: .85rem;
+  pointer-events: none;
+}
+.kf-input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  font-size: .9rem;
+  font-family: inherit;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: .2s;
+  box-sizing: border-box;
+}
+.kf-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(56,189,248,.15);
+}
+.kf-hint { margin: 0; font-size: .74rem; color: #94a3b8; }
+
+/* ── Preview nama ───────────────────────────────── */
+.kf-preview {
+  border: 1.5px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.kf-preview-stripe {
+  width: 4px;
+  height: 40px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #38bdf8, #0284c7);
+  flex-shrink: 0;
+  transition: .3s;
+}
+.kf-preview-text { flex: 1; }
+.kf-preview-name {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.kf-preview-sub { font-size: .76rem; color: #94a3b8; margin-top: 2px; }
+
+/* ── Tombol aksi ────────────────────────────────── */
+.kf-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+}
+.kf-btn-submit {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  color: #fff;
+  font-weight: 700;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: .2s;
+  box-shadow: 0 8px 20px -8px rgba(2,132,199,.5);
+}
+.kf-btn-submit:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(2,132,199,.55); }
+.kf-btn-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 13px 18px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  background: #fff;
+  color: #64748b;
+  font-weight: 600;
+  font-size: .88rem;
+  text-decoration: none;
+  transition: .18s;
+}
+.kf-btn-cancel:hover { border-color: #94a3b8; color: #334155; }
+
+/* ── Sidebar info ───────────────────────────────── */
+.kf-info-body { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.kf-info-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.kf-info-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38bdf8;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.kf-info-text { font-size: .82rem; color: #64748b; line-height: 1.5; }
+.kf-info-text strong { color: #334155; font-weight: 600; }
+
+.kf-divider { border: none; border-top: 1.5px solid #f1f5f9; margin: 0; }
+
+.kf-existing {
+  padding: 16px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kf-existing-title {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.kf-existing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.kf-existing-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: .78rem;
+  font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="katform-page">
+
+  <a href="{% url 'kategori_dashboard' %}" class="katform-back">
+    <i class="fa fa-arrow-left"></i> Kembali ke Daftar Kategori
+  </a>
+
+  <div class="katform-layout">
+
+    <!-- Form Utama -->
+    <section class="kf-card">
+      <header class="kf-card-header">
+        <span class="kf-card-header-icon kf-icon-form"><i class="fa fa-plus"></i></span>
+        <div>
+          <p class="kf-card-header-title">{{ action|default:"Tambah" }} Kategori Cuaca</p>
+          <p class="kf-card-header-sub">{% if edit_kategori %}Ubah nama kategori yang sudah ada{% else %}Buat kategori baru untuk mengelompokkan tips{% endif %}</p>
+        </div>
+      </header>
+
+      <form method="POST" class="kf-form-body">
+        {% csrf_token %}
+
+        <!-- Nama Kategori -->
+        <div class="kf-field">
+          <label class="kf-label">Nama Kategori <span class="kf-req"></span></label>
+          <div class="kf-input-wrap">
+            <i class="fa fa-tag kf-input-icon"></i>
+            <input type="text" name="nama" id="kf-nama-input" class="kf-input"
+                   value="{{ edit_kategori.nama|default:'' }}"
+                   placeholder="Contoh: Hujan, Cerah, Badai..." maxlength="120" required
+                   autocomplete="off">
+          </div>
+          <p class="kf-hint">Gunakan nama yang jelas dan mudah dikenali pengguna.</p>
+        </div>
+
+        <!-- Preview -->
+        <div class="kf-field">
+          <label class="kf-label">Pratinjau</label>
+          <div class="kf-preview">
+            <span class="kf-preview-stripe" id="kf-stripe"></span>
+            <div class="kf-preview-text">
+              <div class="kf-preview-name" id="kf-preview-name">{{ edit_kategori.nama|default:"Nama kategori…" }}</div>
+              <div class="kf-preview-sub">Kategori cuaca</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aksi -->
+        <div class="kf-actions">
+          <button type="submit" class="kf-btn-submit">
+            <i class="fa fa-check"></i> {% if edit_kategori %}Simpan Perubahan{% else %}Simpan Kategori{% endif %}
+          </button>
+          <a href="{% url 'kategori_dashboard' %}" class="kf-btn-cancel">
+            <i class="fa fa-xmark"></i> Batal
+          </a>
+        </div>
+      </form>
+    </section>
+
+    <!-- Sidebar Info -->
+    <aside>
+      <section class="kf-card">
+        <header class="kf-card-header">
+          <span class="kf-card-header-icon kf-icon-info"><i class="fa fa-circle-info"></i></span>
+          <div>
+            <p class="kf-card-header-title">Panduan</p>
+            <p class="kf-card-header-sub">Tips membuat kategori yang baik</p>
+          </div>
+        </header>
+        <div class="kf-info-body">
+          <div class="kf-info-item">
+            <span class="kf-info-dot"></span>
+            <p class="kf-info-text"><strong>Nama singkat & jelas</strong> — gunakan 1–2 kata yang langsung menggambarkan jenis cuaca.</p>
+          </div>
+          <div class="kf-info-item">
+            <span class="kf-info-dot"></span>
+            <p class="kf-info-text"><strong>Hindari duplikasi</strong> — pastikan belum ada kategori dengan nama serupa di daftar.</p>
+          </div>
+          <div class="kf-info-item">
+            <span class="kf-info-dot"></span>
+            <p class="kf-info-text"><strong>Konsisten</strong> — sesuaikan dengan kondisi cuaca yang muncul di aplikasi SkyWise AI.</p>
+          </div>
+        </div>
+
+        {% if kategori %}
+        <hr class="kf-divider">
+        <div class="kf-existing">
+          <p class="kf-existing-title">Kategori yang sudah ada</p>
+          <div class="kf-existing-list">
+            {% for kat in kategori %}
+            <span class="kf-existing-tag">{{ kat.nama }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </section>
+    </aside>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const namaInput = document.getElementById('kf-nama-input');
+const previewName = document.getElementById('kf-preview-name');
+const stripe = document.getElementById('kf-stripe');
+
+const colorMap = {
+  cerah:   'linear-gradient(180deg,#fbbf24,#f59e0b)',
+  berawan: 'linear-gradient(180deg,#94a3b8,#64748b)',
+  badai:   'linear-gradient(180deg,#a78bfa,#7c3aed)',
+  hujan:   'linear-gradient(180deg,#60a5fa,#2563eb)',
+  kabut:   'linear-gradient(180deg,#cbd5e1,#94a3b8)',
+};
+
+function updateStripeColor(val) {
+  const lower = val.toLowerCase();
+  let color = 'linear-gradient(180deg,#38bdf8,#0284c7)';
+  for (const [key, grad] of Object.entries(colorMap)) {
+    if (lower.includes(key)) { color = grad; break; }
+  }
+  stripe.style.background = color;
+}
+
+namaInput.addEventListener('input', function(){
+  const val = this.value.trim();
+  previewName.textContent = val || 'Nama kategori…';
+  updateStripeColor(val);
+});
+
+// Set warna stripe awal jika sedang mode edit (sudah ada nilai dari awal)
+if (namaInput.value.trim()) {
+  updateStripeColor(namaInput.value.trim());
+}
+</script>
+{% endblock %}

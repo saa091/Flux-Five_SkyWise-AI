@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Weather Highlights — SkyWise AI{% endblock %}
+{% block content %}
+
+<style>
+/* === BENTO GRID === */
+.bento{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:260px 260px;gap:1rem}
+.wh-card{border-radius:20px;overflow:hidden;cursor:pointer;position:relative;transition:transform .3s,box-shadow .3s}
+.wh-card:hover{transform:translateY(-6px);box-shadow:0 24px 60px rgba(0,0,0,.2)}
+.wh-card:hover .card-icon-wrap{transform:translate(-50%,-60%) scale(1.12)}
+.card-badge{font-size:.65rem;font-weight:700;padding:3px 12px;border-radius:999px;background:rgba(255,255,255,.25);color:#fff;position:absolute;top:1rem;right:1rem;z-index:2;backdrop-filter:blur(6px)}
+.card-icon-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);z-index:2;width:80px;height:80px;border-radius:18px;background:rgba(255,255,255,.2);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:2.5rem;box-shadow:0 8px 24px rgba(0,0,0,.18);transition:transform .3s}
+.card-overlay{position:absolute;bottom:0;left:0;right:0;padding:1.2rem;z-index:2;background:linear-gradient(to top,rgba(0,0,0,.4) 0%,transparent 100%)}
+.card-overlay h3{font-size:.95rem;font-weight:800;color:#fff;margin-bottom:.2rem;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.card-overlay p{font-size:.78rem;color:rgba(255,255,255,.85);line-height:1.5;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.card-deco{position:absolute;inset:0;overflow:hidden;z-index:0}
+.card-deco::before{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.12);filter:blur(40px);top:-40px;right:-40px}
+.card-deco::after{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.08);filter:blur(30px);bottom:-30px;left:-20px}
+.ripple{position:absolute;border-radius:50%;transform:scale(0);animation:rippleAnim .6s linear;background:rgba(255,255,255,.35);pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+
+/* === MODAL === */
+.ph-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:5000;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)}
+.ph-modal-bg.open{display:flex}
+.ph-modal-box{background:#fff;border-radius:24px;max-width:440px;width:100%;overflow:hidden;transform:scale(.85);opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s}
+.ph-modal-bg.open .ph-modal-box{transform:scale(1);opacity:1}
+.ph-modal-head{height:180px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.ph-modal-head .ph-m-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.3}
+.ph-modal-close{position:absolute;top:1rem;right:1rem;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* === TIPS CARD (sama persis dengan tips_list.html) === */
+.modern-tip-card{background:#fff;border:1px solid #e2e8f0;border-radius:24px;display:flex;position:relative;overflow:hidden;min-height:220px;transition:transform .4s cubic-bezier(.4,0,.2,1),box-shadow .4s cubic-bezier(.4,0,.2,1);box-shadow:0 4px 6px -1px rgba(0,0,0,.02)}
+.modern-tip-card:hover{transform:translateY(-6px);box-shadow:0 20px 30px -5px rgba(15,23,42,.06);border-color:#cbd5e1}
+.tip-card-content{flex:1;padding:1.75rem 1.5rem;display:flex;flex-direction:column;justify-content:center;max-width:65%;z-index:3}
+.tip-card-meta{display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
+.tip-card-badge{font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:6px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:.05em}
+.tip-card-date{font-size:.75rem;color:#94a3b8;font-weight:500}
+.tip-card-title{font-size:1rem;font-weight:800;color:#0f172a;margin-bottom:.5rem;line-height:1.4}
+.tip-card-desc{font-size:.8rem;color:#64748b;line-height:1.6;margin-bottom:1.25rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tip-card-link{display:inline-flex;align-items:center;gap:8px;font-size:.75rem;color:#0f172a;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-top:auto;text-decoration:none}
+.tip-card-link i{background:#0f172a;color:#fff;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;transition:transform .3s,background-color .2s}
+.modern-tip-card:hover .tip-card-link i{transform:translateX(4px);background:#6FA8DC}
+.tip-card-img-wrapper{position:absolute;right:0;top:0;bottom:0;width:55%;overflow:hidden;z-index:1}
+.tip-card-img-wrapper::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#fff 15%,rgba(255,255,255,.7) 50%,transparent 100%);z-index:2}
+@keyframes smoothFloat{0%{transform:scale(1.1) translateY(0px) rotate(0deg)}50%{transform:scale(1.15) translateY(-8px) rotate(1.5deg)}100%{transform:scale(1.1) translateY(0px) rotate(0deg)}}
+.tip-card-img{width:100%;height:100%;object-fit:cover;transform:scale(1.1);animation:smoothFloat 8s ease-in-out infinite;filter:grayscale(15%) contrast(95%)}
+.modern-tip-card:hover .tip-card-img{filter:grayscale(0%) contrast(100%)}
+
+@media(max-width:768px){
+  .bento{grid-template-columns:1fr 1fr;grid-template-rows:auto}
+  .wh-card{min-height:180px!important;grid-column:auto!important;grid-row:auto!important}
+  .modern-tip-card{flex-direction:column;min-height:auto}
+  .tip-card-content{max-width:100%;padding:1.5rem}
+  .tip-card-img-wrapper{position:relative;width:100%;height:180px}
+  .tip-card-img-wrapper::after{background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,.4) 40%,transparent 100%)}
+}
+</style>
+
+<section class="bg-hero" style="padding:4.5rem 2rem 3rem;position:relative;overflow:hidden;">
+  <div style="max-width:800px;margin:0 auto;text-align:center;">
+    <span style="font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#6FA8DC;">WEATHER HIGHLIGHTS</span>
+    <h1 style="font-size:2.5rem;font-weight:800;color:#fff;margin:.75rem 0;">Fenomena &amp; Info Cuaca</h1>
+    <p style="color:#94a3b8;font-size:1rem;line-height:1.7;max-width:560px;margin:0 auto;">Pelajari berbagai fenomena cuaca dan tips aktivitas harian berdasarkan kondisi terkini.</p>
+  </div>
+</section>
+
+<section style="padding:3rem 2rem;background:#f0f9ff;">
+  <div style="max-width:1100px;margin:0 auto;">
+
+    <div class="s-header fu">
+      <span class="s-label">Fenomena Cuaca</span>
+      <h2 class="s-title">Kenali Cuaca di <span>Sekitarmu</span></h2>
+    </div>
+
+    <div class="bento" style="margin-bottom:3.5rem;">
+      {% for ph in phenomena %}
+      <div class="wh-card fu"
+        style="background:{{ ph.gradient }};
+          {% if forloop.counter == 1 %}grid-column:1;grid-row:1/3;{% endif %}
+          {% if forloop.counter == 2 %}grid-column:2;grid-row:1;{% endif %}
+          {% if forloop.counter == 3 %}grid-column:3;grid-row:1;{% endif %}
+          {% if forloop.counter == 4 %}grid-column:2;grid-row:2;{% endif %}
+          {% if forloop.counter == 5 %}grid-column:3;grid-row:2;{% endif %}
+          {% if forloop.counter == 6 %}display:none;{% endif %}"
+        onclick="openPhModal(this,'{{ ph.emoji }}','{{ ph.title|escapejs }}','{{ ph.category|escapejs }}','{{ ph.description|escapejs }}','{{ ph.detail|escapejs }}','{{ ph.gradient|escapejs }}','{{ ph.img_url|default:''|escapejs }}')">
+
+        <div class="card-deco"></div>
+
+        <img src="
+          {% if ph.title == 'Cerah Berawan' %}https://images.unsplash.com/photo-1601297183305-6df142704ea2?w=800&q=60
+          {% elif ph.title == 'Hujan Ringan' %}https://images.unsplash.com/photo-1519692933481-e162a57d6721?w=800&q=60
+          {% elif ph.title == 'Hujan Petir' %}https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28?w=800&q=60
+          {% elif ph.title == 'Berkabut' %}https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=800&q=60
+          {% elif ph.title == 'Mendung' %}https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800&q=60
+          {% elif ph.title == 'Angin Kencang' %}https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=800&q=60
+          {% else %}https://images.unsplash.com/photo-1601297183305-6df142704ea2?w=800&q=60
+          {% endif %}"
+          style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.15;z-index:0;mix-blend-mode:luminosity;"
+          alt="">
+
+        <span class="card-badge">{{ ph.category }}</span>
+
+        <div class="card-icon-wrap">
+          {% if ph.icon_img %}
+          <img src="{{ ph.icon_img.url }}" style="width:50px;height:50px;object-fit:contain;" alt="{{ ph.title }}">
+          {% else %}
+          {{ ph.emoji }}
+          {% endif %}
+        </div>
+
+        <div class="card-overlay">
+          <h3>{{ ph.title }}</h3>
+          <p>{{ ph.description }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if tips_list %}
+    <div class="s-header fu">
+      <span class="s-label">Tips Aktivitas</span>
+      <h2 class="s-title">Saran dari <span>Tim SkyWise</span></h2>
+    </div>
+
+    <div class="rg-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;" id="tips-grid">
+      {% for tip in tips_list %}
+      {% if forloop.counter <= 3 %}
+      <div class="modern-tip-card tip-item" data-cat="{{ tip.kategori_id }}">
+        <div class="tip-card-content">
+          <div class="tip-card-meta">
+            <span class="tip-card-badge">{{ tip.kategori.nama }}</span>
+            <span class="tip-card-date">{{ tip.dibuat|date:"d M Y" }}</span>
+          </div>
+          <h3 class="tip-card-title">{{ tip.judul }}</h3>
+          <p class="tip-card-desc">{{ tip.isi|striptags|truncatechars:100 }}</p>
+          <a href="{% url 'tips_detail' tip.pk %}" class="tip-card-link">
+            Selengkapnya <i class="fa fa-arrow-right"></i>
+          </a>
+        </div>
+        <div class="tip-card-img-wrapper">
+          {% if tip.gambar %}
+            <img src="{{ tip.gambar.url }}" alt="{{ tip.judul }}" class="tip-card-img">
+          {% elif tip.kategori.nama == 'Cerah' %}
+            <img src="https://images.unsplash.com/photo-1504386106331-3e4e71712b38?q=80&w=600&auto=format&fit=crop" alt="Cerah" class="tip-card-img">
+          {% elif tip.kategori.nama == 'Berawan' %}
+            <img src="https://images.unsplash.com/photo-1534088568595-a066f410bcda?q=80&w=600&auto=format&fit=crop" alt="Berawan" class="tip-card-img">
+          {% elif tip.kategori.nama == 'Hujan' %}
+            <img src="https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?q=80&w=600&auto=format&fit=crop" alt="Hujan" class="tip-card-img">
+          {% elif tip.kategori.nama == 'Badai' %}
+            <img src="https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?q=80&w=600&auto=format&fit=crop" alt="Badai" class="tip-card-img">
+          {% else %}
+            <img src="https://images.unsplash.com/photo-1494676177434-a84147291986?q=80&w=600&auto=format&fit=crop" alt="Cuaca" class="tip-card-img">
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <div style="text-align:center;margin-top:1.5rem;">
+      <a href="{% url 'tips_list' %}" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#3E7CB1,#1F4E79);border-radius:12px;padding:11px 24px;font-size:.875rem;font-weight:800;color:#fff;text-decoration:none;box-shadow:0 4px 16px rgba(62,124,177,.35);transition:all .2s;"
+        onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        Lihat Semua Tips <i class="fa fa-arrow-right"></i>
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+<!-- MODAL PHENOMENA -->
+<div class="ph-modal-bg" id="ph-modal" onclick="if(event.target===this)closePhModal()">
+  <div class="ph-modal-box">
+    <div class="ph-modal-head" id="ph-m-head">
+      <img class="ph-m-bg-img" id="ph-m-img" src="" alt="">
+      <div style="position:relative;z-index:1;font-size:5rem" id="ph-m-emoji"></div>
+      <button class="ph-modal-close" onclick="closePhModal()">✕</button>
+    </div>
+    <div style="padding:1.5rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+        <h2 id="ph-m-title" style="font-size:1.3rem;font-weight:800;color:#3E7CB1;"></h2>
+        <span id="ph-m-badge" style="font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:999px;background:#f1f5f9;color:#475569;"></span>
+      </div>
+      <p id="ph-m-short" style="font-weight:600;color:#334155;font-size:.85rem;margin-bottom:.6rem;"></p>
+      <p id="ph-m-detail" style="font-size:.875rem;color:#64748b;line-height:1.75;"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+function openPhModal(el,emoji,title,cat,shortDesc,detail,grad,imgUrl){
+  const modal=document.getElementById('ph-modal');
+  const head=document.getElementById('ph-m-head');
+  head.style.background=grad;
+  document.getElementById('ph-m-emoji').textContent=emoji;
+  document.getElementById('ph-m-title').textContent=title;
+  document.getElementById('ph-m-short').textContent=shortDesc;
+  document.getElementById('ph-m-detail').textContent=detail;
+  document.getElementById('ph-m-badge').textContent=cat;
+  const img=document.getElementById('ph-m-img');
+  img.src=imgUrl||'';
+  img.style.display=imgUrl?'block':'none';
+  modal.classList.add('open');
+  const ripple=document.createElement('div');
+  ripple.className='ripple';
+  const r=el.getBoundingClientRect();
+  const s=Math.max(r.width,r.height)*2;
+  ripple.style.cssText=`width:${s}px;height:${s}px;left:${r.width/2-s/2}px;top:${r.height/2-s/2}px`;
+  el.appendChild(ripple);
+  setTimeout(()=>ripple.remove(),700);
+}
+function closePhModal(){document.getElementById('ph-modal').classList.remove('open')}
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.filter-btn').forEach(b=>{
+      b.style.background='#fff';b.style.color='#475569';b.style.borderColor='#cbd5e1';
+    });
+    this.style.background='#1e293b';this.style.color='#f1f5f9';this.style.borderColor='#1e293b';
+    const cat=this.dataset.cat;
+    document.querySelectorAll('.tip-item').forEach(el=>{
+      el.style.display=(cat==='all'||el.dataset.cat===cat)?'':'none';
+    });
+  });
+});
+</script>
+
+{% endblock %}

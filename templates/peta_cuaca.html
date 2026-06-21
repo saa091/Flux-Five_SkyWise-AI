@@ -1,0 +1,552 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Peta Cuaca Interaktif — SkyWise AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+/* ═══ HERO ═══ */
+.peta-hero{background:linear-gradient(155deg,#AFC9DE 0%,#5B8AAE 45%,#2C5470 100%);padding:2.5rem 1.5rem 1.4rem;text-align:center;position:relative;overflow:hidden;}
+.peta-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(111,168,220,.12),transparent 70%);pointer-events:none;}
+.peta-hero h1{font-size:clamp(1.6rem,4vw,2.3rem);font-weight:800;color:#f1f5f9;margin-bottom:.35rem;letter-spacing:-.03em;position:relative;}
+.peta-hero h1 span{color:rgba(255,255,255,.7);}
+.peta-hero p{color:#64748b;font-size:.9rem;margin-bottom:1.2rem;position:relative;}
+
+/* ═══ SEARCH BAR ═══ */
+.peta-search-wrap{display:flex;gap:.5rem;max-width:540px;margin:0 auto .9rem;position:relative;}
+.peta-search-wrap input{flex:1;padding:.7rem 1.1rem;border-radius:13px;border:1.5px solid rgba(111,168,220,.35);background:rgba(255,255,255,.6);color:#1F4E79;font-size:.92rem;outline:none;font-family:inherit;transition:border-color .2s,background .2s,box-shadow .2s;}
+.peta-search-wrap input:focus{border-color:#6FA8DC;background:rgba(255,255,255,.88);box-shadow:0 0 0 3px rgba(111,168,220,.25);}
+.peta-search-wrap input::placeholder{color:#7B95AC;}
+.peta-search-wrap button{padding:.7rem 1.3rem;border-radius:13px;border:none;background:linear-gradient(135deg,#6FA8DC,#3E7CB1);color:#0f172a;font-weight:800;font-size:.88rem;cursor:pointer;transition:opacity .2s,transform .15s;font-family:inherit;}
+.peta-search-wrap button:hover{opacity:.88;transform:translateY(-1px);}
+
+/* ═══ AUTOCOMPLETE DROPDOWN ═══ */
+.peta-ac-list{position:absolute;top:calc(100% + 6px);left:0;right:60px;background:#ffffff;border:1.5px solid rgba(111,168,220,.3);border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.18);z-index:9999;overflow:hidden;max-height:260px;overflow-y:auto;display:none;}
+.peta-ac-item{padding:10px 14px;cursor:pointer;font-size:.875rem;color:#334155;display:flex;align-items:center;gap:10px;transition:background .15s;}
+.peta-ac-item:hover,.peta-ac-item.selected{background:rgba(111,168,220,.12);}
+.peta-ac-item .ac-name{font-weight:700;}
+.peta-ac-item .ac-sub{font-size:.72rem;color:#475569;margin-left:auto;}
+
+/* ═══ RECENT SEARCHES ═══ */
+.recent-searches-wrap{min-height:32px;display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin-bottom:.5rem;}
+.recent-label{font-size:.65rem;font-weight:800;color:rgba(31,78,121,.55);letter-spacing:.1em;text-transform:uppercase;width:100%;text-align:center;margin-bottom:.2rem;}
+.chip {
+    padding: .3rem .9rem;
+    border-radius: 20px;
+    background: rgba(111,168,220,.1);
+    color: #1F4E79;
+    font-size: .77rem;
+    border: 1.5px solid rgba(111,168,220,.2);
+    transition: all .2s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Beri jarak aman antara teks kota dan tombol X */
+    position: relative;
+}
+
+.chip-del {
+    opacity: .5;
+    font-size: .75rem;
+    line-height: 1;
+    padding: 2px 4px;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer !important; /* Paksa kursor berubah jadi logo tangan klik */
+    position: relative;
+    z-index: 30; /* Pastikan posisinya berada di paling depan agar bisa diklik */
+    transition: opacity .15s, color .15s;
+}
+
+.chip-del:hover {
+    opacity: 1;
+    color: #fca5a5; /* Berubah jadi merah soft saat diarahkan mouse */
+}
+
+/* ═══ LAYER TOGGLE ═══ */
+.layer-bar{display:flex;gap:.4rem;justify-content:center;padding:.65rem 1.5rem;background:#060e1c;border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap;}
+.layer-btn{padding:.35rem .85rem;border-radius:9px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#475569;font-size:.78rem;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.layer-btn.active,.layer-btn:hover{border-color:#6FA8DC;color:#6FA8DC;background:rgba(111,168,220,.1);}
+
+/* ═══ MAP ═══ */
+.peta-layout{position:relative;width:100%;}
+#weatherMap{width:100%;height:calc(100vh - 260px);min-height:500px;cursor:crosshair;}
+@media(max-width:900px){#weatherMap{height:70vw;min-height:350px;}}
+
+/* ═══ LEGEND ═══ */
+.map-legend-panel{position:absolute;bottom:30px;left:10px;z-index:900;background:rgba(8,15,30,.88);backdrop-filter:blur(12px);border:1.5px solid rgba(111,168,220,.18);border-radius:12px;padding:8px 14px;font-size:.72rem;color:#94a3b8;display:none;}
+.legend-title{font-size:.65rem;font-weight:800;color:#6FA8DC;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.legend-bar{height:8px;border-radius:4px;margin:3px 0;}
+.legend-labels{display:flex;justify-content:space-between;font-size:.65rem;color:#475569;}
+
+/* ═══ POPUP ═══ */
+.leaflet-popup-content-wrapper{background:#1a2744 !important;border:1.5px solid rgba(111,168,220,.25) !important;border-radius:14px !important;box-shadow:0 12px 40px rgba(0,0,0,.55) !important;color:#f1f5f9 !important;}
+.leaflet-popup-tip{background:#1a2744 !important;}
+.leaflet-popup-content{margin:11px 15px !important;}
+.popup-inner{min-width:160px;}
+.popup-city{font-weight:800;font-size:1rem;color:#f1f5f9;display:flex;align-items:center;gap:6px;margin-bottom:.6rem;}
+.popup-btn{display:block;padding:.5rem .9rem;border-radius:9px;background:linear-gradient(135deg,#6FA8DC,#3E7CB1);color:#0f172a;font-weight:800;font-size:.78rem;text-align:center;text-decoration:none;transition:opacity .2s;}
+.popup-btn:hover{opacity:.85;}
+.leaflet-popup-close-button{color:#475569 !important;font-size:1rem !important;padding:6px 8px !important;}
+
+/* ═══ LOADING ═══ */
+.map-loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:rgba(8,15,30,.88);border:1.5px solid rgba(111,168,220,.2);border-radius:14px;padding:1.2rem 2rem;display:none;flex-direction:column;align-items:center;gap:.75rem;color:#64748b;font-size:.875rem;}
+.spinner{width:38px;height:38px;border:3px solid rgba(111,168,220,.15);border-top-color:#6FA8DC;border-radius:50%;animation:spin .75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="peta-hero">
+  <div style="position:absolute;top:10%;right:5%;font-size:5rem;opacity:.06;animation:float 8s ease-in-out infinite;pointer-events:none;">🌏</div>
+  <h1>🗺️ Peta Cuaca <span>Interaktif</span></h1>
+  <p>Klik sembarang titik di peta — data cuaca real-time muncul seketika</p>
+
+  <div style="position:relative;max-width:540px;margin:0 auto .9rem;">
+    <div class="peta-search-wrap" style="max-width:100%;margin:0;">
+      <input type="text" id="searchInput" placeholder="Cari kota, kecamatan, landmark…" autocomplete="off" />
+      <button onclick="searchCity()"><i class="fa fa-magnifying-glass"></i> Cari</button>
+    </div>
+    <div id="petaAcList" class="peta-ac-list"></div>
+  </div>
+
+  <!-- Recent Searches — diisi JS -->
+  <div id="recentWrap" class="recent-searches-wrap" style="display:none;">
+    <div class="recent-label">🕐 Pencarian Terakhir</div>
+    <div id="recentChips" style="display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;"></div>
+  </div>
+</div>
+<div class="peta-layout">
+  <div id="weatherMap"></div>
+  <div id="mapLoading" class="map-loading">
+    <div class="spinner"></div>
+    <span>Mengambil data cuaca…</span>
+  </div>
+  <div id="mapLegend" class="map-legend-panel">
+    <div class="legend-title" id="legendTitle">Suhu (°C)</div>
+    <div class="legend-bar" id="legendBar" style="background:linear-gradient(to right,#3b82f6,#22c55e,#f59e0b,#ef4444);width:160px;"></div>
+    <div class="legend-labels" style="width:160px;"><span id="legMin">-20°</span><span id="legMid">10°</span><span id="legMax">40°</span></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const OWM_KEY = '{{ OPENWEATHER_API_KEY }}';
+const API_URL = '{% url "api_cuaca_lokasi" %}';
+const GEOCODE_URL = '{% url "api_geocode" %}';
+
+// ── RECENT SEARCHES ───────────────────────────────────────────
+// Pakai localStorage key yang sama dengan cek_cuaca supaya sinkron
+const HISTORY_KEY = 'sw_search_history';
+const MAX_RECENT  = 8;
+
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveRecent(nama) {
+  if (!nama || nama.trim().length < 2) return;
+  let h = getRecent();
+  h = h.filter(k => k.toLowerCase() !== nama.toLowerCase());
+  h.unshift(nama.trim());
+  if (h.length > MAX_RECENT) h = h.slice(0, MAX_RECENT);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+}
+
+function removeRecent(nama) {
+  let h = getRecent().filter(k => k.toLowerCase() !== nama.toLowerCase());
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+  renderRecent();
+}
+
+function renderRecent() {
+  const wrap  = document.getElementById('recentWrap');
+  const chips = document.getElementById('recentChips');
+  if (!wrap || !chips) return;
+  const h = getRecent();
+  if (!h.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  chips.innerHTML = '';
+  h.forEach(k => {
+    const div = document.createElement('div');
+    div.className = 'chip';
+    const labelBtn = document.createElement('button');
+    labelBtn.type = 'button';
+    labelBtn.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;padding:0;';
+    labelBtn.textContent = '📍 ' + k;
+    labelBtn.addEventListener('click', () => flyToSearch(k));
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'chip-del';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeRecent(k);
+    });
+    div.appendChild(labelBtn);
+    div.appendChild(delBtn);
+    chips.appendChild(div);
+  });
+}
+
+function flyToSearch(nama) {
+  document.getElementById('searchInput').value = nama;
+  searchCity();
+}
+
+renderRecent();
+
+// ── MAP SETUP ─────────────────────────────────────────────────
+const map = L.map('weatherMap', { center: [-2.5, 118], zoom: 5, zoomControl: true });
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+  { attribution: '© Esri', maxZoom: 19 }
+).addTo(map);
+
+let owmLayer = null;
+
+const legendConfig = {
+  'temp_new':          { title:'Suhu (°C)',            min:'-20°C', mid:'10°C',   max:'40°C',    bar:'linear-gradient(to right,#3b82f6,#06b6d4,#22c55e,#f59e0b,#ef4444)' },
+  'clouds_new':        { title:'Tutupan Awan (%)',      min:'0%',    mid:'50%',    max:'100%',    bar:'linear-gradient(to right,rgba(255,255,255,.1),rgba(255,255,255,.5),rgba(255,255,255,.9))' },
+  'precipitation_new': { title:'Intensitas Hujan',      min:'Ringan',mid:'Sedang', max:'Lebat',   bar:'linear-gradient(to right,rgba(147,197,253,.3),#3b82f6,#1e3a8a)' },
+  'wind_new':          { title:'Kecepatan Angin (m/s)', min:'0 m/s', mid:'15 m/s', max:'30+ m/s', bar:'linear-gradient(to right,#f1f5f9,#94a3b8,#1e293b)' },
+};
+
+function setLayer(layerName) {
+  document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+  const btnId = 'layer-' + (layerName === 'none' ? 'none' : layerName.replace('_new',''));
+  const btn = document.getElementById(btnId);
+  if (btn) btn.classList.add('active');
+  if (owmLayer) { map.removeLayer(owmLayer); owmLayer = null; }
+  const legend = document.getElementById('mapLegend');
+  if (layerName === 'none') { legend.style.display = 'none'; return; }
+  owmLayer = L.tileLayer(
+    `https://tile.openweathermap.org/map/${layerName}/{z}/{x}/{y}.png?appid=${OWM_KEY}`,
+    { opacity: 0.65, maxZoom: 18, attribution: '© OpenWeatherMap' }
+  ).addTo(map);
+  const cfg = legendConfig[layerName];
+  if (cfg) {
+    document.getElementById('legendTitle').textContent = cfg.title;
+    document.getElementById('legendBar').style.background = cfg.bar;
+    document.getElementById('legMin').textContent = cfg.min;
+    document.getElementById('legMid').textContent = cfg.mid;
+    document.getElementById('legMax').textContent = cfg.max;
+    legend.style.display = 'block';
+  }
+}
+
+let currentMarker = null;
+
+map.on('click', e => fetchWeather(e.latlng.lat, e.latlng.lng));
+
+function showLoading() { document.getElementById('mapLoading').style.display = 'flex'; }
+function hideLoading()  { document.getElementById('mapLoading').style.display = 'none'; }
+
+function fetchWeather(lat, lon, nama = '') {
+  showLoading();
+  if (currentMarker) { map.removeLayer(currentMarker); }
+  currentMarker = L.marker([lat, lon], {
+    icon: L.divIcon({
+      html: `<div style="width:18px;height:18px;background:linear-gradient(135deg,#6FA8DC,#3E7CB1);border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 6px rgba(111,168,220,.25),0 4px 12px rgba(0,0,0,.5);"></div>`,
+      className: '', iconAnchor: [9, 9],
+    })
+  }).addTo(map);
+
+  const namaParam = nama ? `&nama=${encodeURIComponent(nama)}` : '';
+  fetch(`${API_URL}?lat=${lat}&lon=${lon}${namaParam}`)
+    .then(r => r.json())
+    .then(data => {
+      hideLoading();
+      if (data.error) { alert(data.error); return; }
+      const namaKota = nama || data.kota;
+      if (namaKota) { saveRecent(namaKota); renderRecent(); }
+      showPopup(lat, lon, data);
+    })
+    .catch(() => { hideLoading(); alert('Gagal mengambil data cuaca.'); });
+}
+
+function showPopup(lat, lon, d) {
+  // Hanya tampilkan nama kota + tombol detail
+  currentMarker.bindPopup(
+    `<div class="popup-inner">
+      <div class="popup-city">📍 ${d.kota}, ${d.negara}</div>
+      <a class="popup-btn" href="/cek-cuaca/?kota_auto=${encodeURIComponent(d.kota)}">
+        <i class="fa fa-magnifying-glass-chart"></i> Lihat Detail Lengkap
+      </a>
+    </div>`,
+    { offset: [0, -8], maxWidth: 220 }
+  ).openPopup();
+}
+
+// ── Country DB (untuk search nama negara) ─────────────────────
+let countryDB = {};
+let countryDBReady = false;
+
+const ID_ALIAS = {
+  'jepang':'japan','tiongkok':'china','cina':'china','inggris':'united kingdom',
+  'belanda':'netherlands','jerman':'germany','prancis':'france','perancis':'france',
+  'spanyol':'spain','italia':'italy','yunani':'greece','mesir':'egypt',
+  'maroko':'morocco','rusia':'russia','ukraina':'ukraine','swedia':'sweden',
+  'norwegia':'norway','finlandia':'finland','denmark':'denmark','turki':'turkey',
+  'india':'india','pakistan':'pakistan','bangladesh':'bangladesh',
+  'thailand':'thailand','vietnam':'vietnam','filipina':'philippines',
+  'malaysia':'malaysia','singapura':'singapore','brunei':'brunei',
+  'korea selatan':'south korea','korea':'south korea','australia':'australia',
+  'selandia baru':'new zealand','kanada':'canada','meksiko':'mexico',
+  'brasil':'brazil','argentina':'argentina','chili':'chile',
+  'ghana':'ghana','nigeria':'nigeria','kenya':'kenya','tanzania':'tanzania',
+  'afrika selatan':'south africa','aljazair':'algeria',
+  'arab saudi':'saudi arabia','uni emirat arab':'united arab emirates',
+  'uea':'united arab emirates','iran':'iran','irak':'iraq','yaman':'yemen',
+  'israel':'israel','palestina':'state of palestine',
+  'afganistan':'afghanistan','kazakhstan':'kazakhstan',
+  'islandia':'iceland','irlandia':'ireland',
+  'austria':'austria','belgia':'belgium','swiss':'switzerland',
+  'portugis':'portugal','rumania':'romania','kroasia':'croatia',
+  'hungaria':'hungary','serbia':'serbia',
+  'tunisia':'tunisia','libya':'libya','sudan':'sudan',
+  'somalia':'somalia','ethiopia':'ethiopia',
+  'kolombia':'colombia','venezuela':'venezuela','peru':'peru',
+  'bolivia':'bolivia','ekuador':'ecuador','uruguay':'uruguay',
+  'kongo':'democratic republic of the congo','madagaskar':'madagascar',
+  'mozambik':'mozambique','angola':'angola','zambia':'zambia',
+  'zimbabwe':'zimbabwe','uganda':'uganda',
+  'amerika':'united states','amerika serikat':'united states',
+  'usa':'united states','as':'united states',
+  'uk':'united kingdom','gb':'united kingdom',
+};
+
+function getZoomForCountry(area) {
+  if (!area) return 5;
+  if (area > 5000000) return 3;
+  if (area > 1000000) return 4;
+  if (area > 200000)  return 5;
+  if (area > 50000)   return 6;
+  if (area > 5000)    return 7;
+  return 9;
+}
+
+function buildCountryDB(countries) {
+  countries.forEach(c => {
+    const ll = c.capitalInfo && c.capitalInfo.latlng;
+    if (!ll || ll.length < 2) return;
+    const entry = { lat: ll[0], lon: ll[1], zoom: getZoomForCountry(c.area), capital: (c.capital && c.capital[0]) || '' };
+    const keys = [c.name.common, c.name.official, c.cca2, c.cca3];
+    if (c.name.nativeName) Object.values(c.name.nativeName).forEach(n => { if (n.common) keys.push(n.common); if (n.official) keys.push(n.official); });
+    if (c.translations) Object.values(c.translations).forEach(t => { if (t.common) keys.push(t.common); if (t.official) keys.push(t.official); });
+    keys.forEach(k => { if (k) countryDB[k.toLowerCase().trim()] = entry; });
+  });
+  Object.entries(ID_ALIAS).forEach(([id, en]) => { if (!countryDB[id] && countryDB[en]) countryDB[id] = countryDB[en]; });
+  countryDBReady = true;
+}
+
+fetch('https://restcountries.com/v3.1/all?fields=name,capital,capitalInfo,cca2,cca3,area,translations')
+  .then(r => r.json())
+  .then(data => buildCountryDB(data))
+  .catch(() => { countryDBReady = true; });
+
+// ── AUTOCOMPLETE ──────────────────────────────────────────────
+(function(){
+  const input  = document.getElementById('searchInput');
+  const acList = document.getElementById('petaAcList');
+  if (!input || !acList) return;
+  let timer, acItems = [], acIdx = -1;
+
+  input.addEventListener('input', function(){
+    clearTimeout(timer);
+    const q = this.value.trim();
+    if (q.length < 2) { acList.style.display = 'none'; return; }
+    timer = setTimeout(() =>
+      fetch(`/api/autocomplete-kota/?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(d => { acItems = d.results || []; renderAC(); })
+    , 300);
+  });
+
+  function renderAC() {
+    if (!acItems.length) { acList.style.display = 'none'; return; }
+    acList.innerHTML = '';
+    acIdx = -1;
+    acItems.forEach((item) => {
+      const div = document.createElement('div');
+      div.className = 'peta-ac-item';
+      const flag = item.negara === 'ID' ? '🇮🇩'
+                 : item.negara === 'US' ? '🇺🇸'
+                 : item.negara === 'GB' ? '🇬🇧'
+                 : item.negara === 'JP' ? '🇯🇵'
+                 : item.negara === 'AU' ? '🇦🇺'
+                 : item.negara === 'SG' ? '🇸🇬'
+                 : item.negara === 'MY' ? '🇲🇾'
+                 : '📍';
+      const sub = item.display && item.display.includes(',')
+                ? item.display.split(',').slice(1).join(',').trim() : '';
+      div.innerHTML = `<span>${flag}</span><span class="ac-name">${item.kota}</span>${sub ? `<span class="ac-sub">${sub}</span>` : ''}`;
+      div.addEventListener('mousedown', e => { e.preventDefault(); pickAC(item); });
+      acList.appendChild(div);
+    });
+    acList.style.display = 'block';
+  }
+
+  function pickAC(item) {
+    input.value = item.kota;
+    acList.style.display = 'none';
+    if (item.lat != null && item.lon != null) {
+      map.flyTo([item.lat, item.lon], 11, { duration: 1.2 });
+      fetchWeather(item.lat, item.lon, item.kota);
+    }
+  }
+
+  input.addEventListener('keydown', function(e){
+    const ds = acList.querySelectorAll('.peta-ac-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      acIdx = Math.min(acIdx + 1, ds.length - 1);
+      highlightAC(ds);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      acIdx = Math.max(acIdx - 1, -1);
+      highlightAC(ds);
+    } else if (e.key === 'Enter') {
+      if (acIdx >= 0 && acItems[acIdx]) { e.preventDefault(); pickAC(acItems[acIdx]); }
+      else { acList.style.display = 'none'; searchCity(); }
+    } else if (e.key === 'Escape') {
+      acList.style.display = 'none';
+    }
+  });
+
+  function highlightAC(ds) {
+    ds.forEach((d, i) => {
+      d.classList.toggle('selected', i === acIdx);
+      if (i === acIdx) input.value = acItems[i].kota;
+    });
+  }
+
+  document.addEventListener('click', e => {
+    if (!acList.contains(e.target) && e.target !== input)
+      acList.style.display = 'none';
+  });
+})();
+
+// ── SEARCH ────────────────────────────────────────────────────
+// Semua geocoding lewat backend Django (/api/geocode/) untuk hindari CORS
+function searchCity() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  const acList = document.getElementById('petaAcList');
+  if (acList) acList.style.display = 'none';
+
+  // Hapus error lama
+  const oldErr = document.getElementById('search-error-msg');
+  if (oldErr) oldErr.remove();
+
+  // Cek country DB dulu
+  const qLow = q.toLowerCase().trim();
+  const resolvedKey = ID_ALIAS[qLow] || qLow;
+  if (countryDBReady && countryDB[resolvedKey]) {
+    const { lat, lon, zoom } = countryDB[resolvedKey];
+    map.flyTo([lat, lon], zoom, { duration: 1.4 });
+    fetchWeather(lat, lon, q);
+    return;
+  }
+
+  // Geocoding via backend proxy
+  showLoading();
+  fetch(`${GEOCODE_URL}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json())
+    .then(data => {
+      const results = data.results || [];
+      if (!results.length) {
+        hideLoading();
+        showSearchError(`"${q}" tidak ditemukan. Coba nama kota yang lebih spesifik.`);
+        return;
+      }
+
+      // ── VALIDASI BARU: cek apakah hasil sesuai dengan query ──
+      let best = null;
+
+      if (results.length > 0) {
+        // Langsung ambil hasil pertama dari Nominatim karena biasanya itu yang paling akurat
+        best = results[0];
+      }
+
+      // Jika benar-benar tidak ada hasil dari API Nominatim
+      if (!best) {
+        hideLoading();
+        showSearchError(`"${q}" tidak ditemukan. Coba nama yang lebih spesifik atau gunakan nama kota/kabupaten.`);
+        return;
+      }
+
+      // Ambil nama tampilan utama untuk dimasukkan kembali ke input pencarian
+      const namaLokasi = best.display_name.split(',')[0].trim();
+      document.getElementById('searchInput').value = namaLokasi;
+      
+      // Gerakkan peta dan ambil data cuacanya
+      map.flyTo([parseFloat(best.lat), parseFloat(best.lon)], 11, { duration: 1.2 });
+      fetchWeather(parseFloat(best.lat), parseFloat(best.lon), namaLokasi);
+    })
+    .catch(() => {
+      hideLoading();
+      showSearchError('Gagal terhubung ke server pencarian. Coba lagi.');
+    });
+}
+
+function showSearchError(msg) {
+  // Hapus error lama kalau ada
+  const old = document.getElementById('search-error-msg');
+  if (old) old.remove();
+  const wrap = document.querySelector('.peta-hero');
+  if (!wrap) return;
+  const div = document.createElement('div');
+  div.id = 'search-error-msg';
+  div.style.cssText = 'background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:10px 16px;font-size:.82rem;color:#fca5a5;margin-top:.5rem;display:inline-block;';
+  div.innerHTML = `⚠️ ${msg}`;
+  wrap.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+function flyToCity(name, lat, lon) {
+  map.flyTo([lat, lon], 10, { duration: 1.2 });
+  fetchWeather(lat, lon, name);
+}
+
+// ── Locate me ─────────────────────────────────────────────────
+const locateBtn = L.control({ position: 'topleft' });
+locateBtn.onAdd = function() {
+  const btn = L.DomUtil.create('button', 'leaflet-bar leaflet-control');
+  btn.innerHTML = '<i class="fa fa-location-crosshairs" style="color:#6FA8DC;font-size:.88rem;"></i>';
+  btn.title = 'Lokasi Saya';
+  Object.assign(btn.style, { width:'34px', height:'34px', background:'#111827', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' });
+  btn.onclick = function(e) {
+    L.DomEvent.stopPropagation(e);
+    if (!navigator.geolocation) { showSearchError('Browser tidak mendukung geolokasi.'); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      const { latitude: lat, longitude: lon } = pos.coords;
+      map.flyTo([lat, lon], 12, { duration: 1.2 });
+      fetchWeather(lat, lon);
+    }, () => showSearchError('Izin lokasi ditolak.'));
+  };
+  return btn;
+};
+locateBtn.addTo(map);
+
+// ── Auto-load dari URL param ───────────────────────────────────
+window.addEventListener('load', () => {
+  const p    = new URLSearchParams(window.location.search);
+  const kota = p.get('kota') || p.get('kota_auto');
+  if (kota) {
+    setTimeout(() => {
+      document.getElementById('searchInput').value = kota;
+      searchCity();
+    }, 800);
+  } else {
+    setTimeout(() => flyToCity('Samarinda', -0.5016, 117.1537), 800);
+  }
+});
+</script>
+{% endblock %}

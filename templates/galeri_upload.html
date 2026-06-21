@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Upload Foto Cuaca — SkyWise AI{% endblock %}
+
+{% block content %}
+<section style="background:linear-gradient(135deg,#5B8AAE,#2C5470);padding:4rem 2rem 2.5rem;text-align:center;">
+  <p style="color:#6FA8DC;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;">📸 Kontribusi Komunitas</p>
+  <h1 style="color:#fff;font-size:2rem;font-weight:800;margin-bottom:.75rem;">Bagikan Foto Cuaca Daerahmu</h1>
+  <p style="color:#94a3b8;font-size:.95rem;max-width:500px;margin:0 auto;">Foto kamu akan membantu pengguna lain melihat kondisi cuaca nyata di berbagai kota Indonesia!</p>
+</section>
+
+<section style="background:#f1f5f9;padding:3rem 2rem;min-height:60vh;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:20px;padding:2rem 2.5rem;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:.88rem;color:#1d4ed8;">
+      <i class="fa fa-circle-info" style="margin-right:6px;"></i>
+      Setiap foto yang diunggah akan ditinjau oleh administrator sebelum dipublikasikan untuk memastikan kualitas dan relevansi informasi cuaca yang dibagikan.
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-weight:600;color:#0f172a;margin-bottom:.4rem;font-size:.9rem;">Judul Laporan Cuaca</label>
+        <input type="text" name="judul" required placeholder="Contoh: Hujan lebat sore hari di Balikpapan" style="width:100%;padding:.7rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#6FA8DC'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+
+      <div class="rg-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+        <div>
+          <label style="display:block;font-weight:600;color:#0f172a;margin-bottom:.4rem;font-size:.9rem;">Nama Kota</label>
+          <input type="text" name="kota" required placeholder="Lokasi Pengambilan Foto" style="width:100%;padding:.7rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#6FA8DC'" onblur="this.style.borderColor='#e2e8f0'">
+        </div>
+        <div>
+          <label style="display:block;font-weight:600;color:#0f172a;margin-bottom:.4rem;font-size:.9rem;">Kategori Cuaca</label>
+          <select name="kondisi_cuaca" style="width:100%;padding:.7rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;background:#fff;outline:none;box-sizing:border-box;">
+            {% for k, v in kondisi_choices %}
+            <option value="{{ k }}">{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-weight:600;color:#0f172a;margin-bottom:.4rem;font-size:.9rem;">Deskripsi Kondisi Cuaca</label>
+        <textarea name="deskripsi" rows="3" placeholder="Jelaskan kondisi cuaca, visibilitas, atau fenomena cuaca yang terlihat saat foto diambil." style="width:100%;padding:.7rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;outline:none;box-sizing:border-box;resize:vertical;" onfocus="this.style.borderColor='#6FA8DC'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+      </div>
+
+      {% if not user.is_authenticated %}
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-weight:600;color:#0f172a;margin-bottom:.4rem;font-size:.9rem;">Nama Kontributor</label>
+        <input type="text" name="nama_pengunggah" placeholder="Opsional. Kosongkan jika ingin ditampilkan sebagai Anonim." style="width:100%;padding:.7rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#6FA8DC'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+      {% endif %}
+
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-weight:600;color:#0f172a;margin-bottom:.4rem;font-size:.9rem;">Foto Cuaca</label>
+        <div id="drop-zone" style="border:2px dashed #cbd5e1;border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:#f8fafc;" onclick="document.getElementById('foto-input').click()" ondragover="event.preventDefault();this.style.borderColor='#6FA8DC';this.style.background='#eff6ff'" ondragleave="this.style.borderColor='#cbd5e1';this.style.background='#f8fafc'" ondrop="handleDrop(event)">
+          <div id="drop-preview" style="display:none;margin-bottom:.75rem;"><img id="preview-img" style="max-height:200px;border-radius:8px;" alt="preview"></div>
+          <i class="fa fa-cloud-arrow-up" id="drop-icon" style="font-size:2rem;color:#94a3b8;margin-bottom:.5rem;"></i>
+          <p id="drop-text" style="color:#64748b;font-size:.9rem;margin:0;">Unggah foto atau seret file ke area ini</p>
+          <p style="color:#94a3b8;font-size:.78rem;margin:.25rem 0 0;">Format didukung: JPG, PNG, WebP • Maksimum 5 MB</p>
+          <input type="file" id="foto-input" name="gambar" accept="image/*" required style="display:none;" onchange="previewFoto(this)">
+        </div>
+      </div>
+
+      <button type="submit" style="width:100%;padding:.85rem;background:linear-gradient(135deg,#3E7CB1,#1F4E79);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
+        <i class="fa fa-paper-plane" style="margin-right:6px;"></i> Kirim Laporan Cuaca
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:1rem;font-size:.85rem;color:#64748b;">
+      <a href="{% url 'galeri_list' %}" style="color:#3E7CB1;text-decoration:none;"><i class="fa fa-arrow-left"></i> Kembali ke Galeri Cuaca</a>
+    </p>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewFoto(input){
+  if(input.files&&input.files[0]){
+    const r=new FileReader();
+    r.onload=e=>{
+      document.getElementById('preview-img').src=e.target.result;
+      document.getElementById('drop-preview').style.display='block';
+      document.getElementById('drop-icon').style.display='none';
+      document.getElementById('drop-text').textContent=input.files[0].name;
+    };
+    r.readAsDataURL(input.files[0]);
+  }
+}
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').style.borderColor='#cbd5e1';
+  document.getElementById('drop-zone').style.background='#f8fafc';
+  const files=e.dataTransfer.files;
+  if(files.length){
+    const inp=document.getElementById('foto-input');
+    const dt=new DataTransfer();
+    dt.items.add(files[0]);
+    inp.files=dt.files;
+    previewFoto(inp);
+  }
+}
+</script>
+{% endblock %}

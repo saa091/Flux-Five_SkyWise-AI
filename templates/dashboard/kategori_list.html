@@ -1,0 +1,270 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Kategori — Dashboard SkyWise AI{% endblock %}
+{% block topbar_title %}Kelola Kategori{% endblock %}
+
+{% block extra_css %}
+<style>
+.katlist-page { animation: kFade .4s ease; }
+@keyframes kFade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Header ─────────────────────────────────────── */
+.katlist-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.katlist-header-text h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+.katlist-header-text p {
+  font-size: .85rem;
+  color: #64748b;
+  margin: 0;
+}
+.btn-tambah-kat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  color: #fff;
+  font-weight: 700;
+  font-size: .88rem;
+  border-radius: 30px;
+  text-decoration: none;
+  box-shadow: 0 6px 16px -6px rgba(2,132,199,.45);
+  transition: .2s;
+  white-space: nowrap;
+}
+.btn-tambah-kat:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -6px rgba(2,132,199,.55); }
+
+/* ── Stats bar ──────────────────────────────────── */
+.katlist-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.stat-chip-blue  { background: #e0f2fe; color: #0284c7; }
+.stat-chip-green { background: #dcfce7; color: #16a34a; }
+.stat-chip-gray  { background: #f1f5f9; color: #64748b; }
+
+/* ── Grid kartu ─────────────────────────────────── */
+.katlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.kat-card-item {
+  background: #fff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 16px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 2px 10px -4px rgba(15,23,42,.07);
+  transition: .2s;
+  position: relative;
+  overflow: hidden;
+}
+.kat-card-item::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+}
+.kat-card-item:hover { border-color: #bae6fd; box-shadow: 0 6px 20px -6px rgba(2,132,199,.15); transform: translateY(-2px); }
+
+/* stripe warna per nama */
+.kat-stripe-sunny  { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.kat-stripe-cloudy { background: linear-gradient(90deg, #94a3b8, #64748b); }
+.kat-stripe-storm  { background: linear-gradient(90deg, #a78bfa, #7c3aed); }
+.kat-stripe-rain   { background: linear-gradient(90deg, #60a5fa, #2563eb); }
+.kat-stripe-fog    { background: linear-gradient(90deg, #cbd5e1, #94a3b8); }
+.kat-stripe-default{ background: linear-gradient(90deg, #38bdf8, #0284c7); }
+
+.kat-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.kat-card-nama {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.kat-card-sub {
+  font-size: .78rem;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+.kat-tips-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .73rem;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0284c7;
+  white-space: nowrap;
+}
+.kat-tips-pill.empty { background: #f1f5f9; color: #94a3b8; }
+
+.kat-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kat-tips-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .82rem;
+  color: #64748b;
+}
+.kat-tips-count i { font-size: .78rem; color: #94a3b8; }
+
+.btn-del-card {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid #fee2e2;
+  background: #fef2f2;
+  color: #ef4444;
+  cursor: pointer;
+  transition: .18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .82rem;
+}
+.btn-del-card:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+.btn-edit-card {
+  width: 32px; height: 32px; border-radius: 9px;
+  border: 1px solid #e0f2fe; background: #f0f9ff; color: #0284c7;
+  cursor: pointer; transition: .18s;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .82rem; text-decoration: none;
+}
+.btn-edit-card:hover { background: #0284c7; color: #fff; border-color: #0284c7; }
+
+/* ── Empty state ────────────────────────────────── */
+.katlist-empty {
+  grid-column: 1/-1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 0;
+  color: #cbd5e1;
+}
+.katlist-empty i { font-size: 2.5rem; }
+.katlist-empty p { margin: 0; font-size: .88rem; color: #94a3b8; }
+.katlist-empty a {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  color: #fff;
+  border-radius: 30px;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="katlist-page">
+
+  <!-- Header -->
+  <div class="katlist-header">
+    <div class="katlist-header-text">
+      <h2>Kelola Kategori Cuaca</h2>
+      <p>Atur kategori cuaca yang dipakai untuk mengelompokkan tips di aplikasi SkyWise AI.</p>
+    </div>
+    <a href="{% url 'kategori_tambah' %}" class="btn-tambah-kat">
+      <i class="fa fa-plus"></i> Tambah Kategori
+    </a>
+  </div>
+
+  <!-- Stats -->
+  <div class="katlist-stats">
+    <span class="stat-chip stat-chip-blue">
+      <i class="fa fa-layer-group"></i> {{ kategori|length }} Kategori
+    </span>
+    <span class="stat-chip stat-chip-green">
+      <i class="fa fa-lightbulb"></i>
+      {% with total=0 %}
+        {% for kat in kategori %}{% with c=kat.tipscuaca_set.count %}{% endwith %}{% endfor %}
+      {% endwith %}
+      {{ kategori|length }} Kategori Aktif
+    </span>
+  </div>
+
+  <!-- Grid Kategori -->
+  <div class="katlist-grid">
+    {% for kat in kategori %}
+    <div class="kat-card-item">
+      <span class="kat-stripe-{% if 'cerah' in kat.nama|lower %}sunny{% elif 'berawan' in kat.nama|lower %}cloudy{% elif 'badai' in kat.nama|lower %}storm{% elif 'hujan' in kat.nama|lower %}rain{% elif 'kabut' in kat.nama|lower %}fog{% else %}default{% endif %}"></span>
+
+      <div class="kat-card-top">
+        <div>
+          <div class="kat-card-nama">{{ kat.nama }}</div>
+          <div class="kat-card-sub">Kategori cuaca</div>
+        </div>
+        <span class="kat-tips-pill {% if kat.tipscuaca_set.count == 0 %}empty{% endif %}">
+          {{ kat.tipscuaca_set.count }} tips
+        </span>
+      </div>
+
+      <div class="kat-card-bottom">
+        <span class="kat-tips-count">
+          <i class="fa fa-file-lines"></i>
+          {% if kat.tipscuaca_set.count == 0 %}Belum ada tips{% else %}{{ kat.tipscuaca_set.count }} tips tersedia{% endif %}
+        </span>
+        <div style="display:flex;gap:6px;">
+          <a href="{% url 'kategori_edit' kat.pk %}" class="btn-edit-card" title="Edit kategori">
+            <i class="fa fa-pen"></i>
+          </a>
+          <button onclick="confirmDelete('{% url 'kategori_delete' kat.pk %}','kategori {{ kat.nama|escapejs }}')" class="btn-del-card" title="Hapus kategori">
+            <i class="fa fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="katlist-empty">
+      <i class="fa fa-tags"></i>
+      <p>Belum ada kategori cuaca.</p>
+      <a href="{% url 'kategori_tambah' %}"><i class="fa fa-plus"></i> Tambah Kategori Pertama</a>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

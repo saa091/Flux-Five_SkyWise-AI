@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{% block title %}SkyWise AI — Informasi Cuaca Real-Time{% endblock %}</title>
+<meta name="description" content="SkyWise AI — Informasi cuaca akurat dari ribuan kota di seluruh dunia, tersedia secara real-time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/skywise.css' %}">
+{% block extra_css %}{% endblock %}
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='26'>⛅</text></svg>">
+</head>
+<body>
+
+<nav class="navbar" id="main-nav">
+  <a href="{% url 'index' %}" class="nav-brand">
+    <div class="nav-logo">⛅</div>
+    SkyWise <span style="color:#6FA8DC;">AI</span>
+  </a>
+
+  <div class="nav-links" id="nav-links">
+    <a href="{% url 'index' %}" class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+      <i class="fa fa-house"></i> Beranda
+    </a>
+    <a href="{% url 'cek_cuaca' %}" class="nav-link {% if request.resolver_match.url_name == 'cek_cuaca' %}active{% endif %}">
+      <i class="fa fa-cloud-sun"></i> Cek Cuaca
+    </a>
+    <a href="{% url 'peta_cuaca' %}" class="nav-link {% if request.resolver_match.url_name == 'peta_cuaca' %}active{% endif %}">
+      <i class="fa fa-map"></i> Peta
+    </a>
+    <a href="{% url 'galeri_list' %}" class="nav-link {% if request.resolver_match.url_name == 'galeri_list' %}active{% endif %}">
+      <i class="fa fa-images"></i> Galeri
+    </a>
+    <a href="{% url 'weather_highlights' %}" class="nav-link {% if request.resolver_match.url_name == 'weather_highlights' %}active{% endif %}">
+      <i class="fa fa-wind"></i> Highlights
+    </a>
+    <a href="{% url 'tips_list' %}" class="nav-link {% if request.resolver_match.url_name == 'tips_list' %}active{% endif %}">
+      <i class="fa fa-lightbulb"></i> Tips
+    </a>
+    <a href="{% url 'about_us' %}" class="nav-link {% if request.resolver_match.url_name == 'about_us' %}active{% endif %}">
+      <i class="fa fa-circle-info"></i> Tentang
+    </a>
+    <a href="{% url 'feedback' %}" class="nav-link {% if request.resolver_match.url_name == 'feedback' %}active{% endif %}">
+      <i class="fa fa-comment-dots"></i> Feedback
+    </a>
+    {% if user.is_authenticated %}
+      {% if user.is_staff %}
+        <a href="{% url 'dashboard' %}" class="nav-link nav-cta">
+          <i class="fa fa-shield-halved"></i> Dashboard
+        </a>
+      {% else %}
+        <a href="{% url 'profil' %}" class="nav-link" style="display:flex;align-items:center;gap:6px;">
+          <span style="width:26px;height:26px;background:#6FA8DC;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#0f172a;">{{ user.username|first|upper }}</span>
+          {{ user.username }}
+        </a>
+        <a href="{% url 'logout' %}" class="nav-link" style="color:#f87171;">
+          <i class="fa fa-right-from-bracket"></i> Keluar
+        </a>
+      {% endif %}
+    {% else %}
+      <!--
+        Sebelumnya ada 2 tombol terpisah: "Admin Login" dan "Daftar".
+        Sekarang digabung jadi 1 tombol "Masuk" saja. Halaman login
+        sudah menyediakan link "Belum punya akun? Daftar" di bawahnya,
+        jadi alur tetap sama-sama bisa dicapai tanpa navbar penuh sesak.
+      -->
+      <a href="{% url 'login' %}" class="nav-link nav-cta">
+        <i class="fa fa-right-to-bracket"></i> Masuk
+      </a>
+    {% endif %}
+  </div>
+
+  <button class="hamburger" id="ham" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+{% if messages %}
+<div class="messages-wrap">
+  {% for message in messages %}
+  <div class="toast {% if message.tags == 'error' %}t-error{% elif message.tags == 'success' %}t-success{% else %}t-info{% endif %}">
+    <i class="fa {% if message.tags == 'error' %}fa-circle-xmark{% elif message.tags == 'success' %}fa-circle-check{% else %}fa-circle-info{% endif %}" style="font-size:1.1rem;"></i>
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="page">
+  {% block content %}{% endblock %}
+</div>
+
+{% block footer %}
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.5rem;">
+        <div class="nav-logo">⛅</div>
+        <span class="footer-brand-name">SkyWise AI</span>
+      </div>
+      <p class="footer-desc">Aplikasi informasi cuaca akurat dari ribuan kota di seluruh dunia, didukung OpenWeatherMap API. Dikembangkan sebagai proyek UAS mahasiswa Informatika UMKT.</p>
+      <a href="https://github.com" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.07);color:#64748b;margin-top:1rem;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.14)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,.07)';this.style.color='#64748b'">
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div>
+      <p class="footer-title">Navigasi</p>
+      <a href="{% url 'index' %}" class="footer-link">Beranda</a>
+      <a href="{% url 'cek_cuaca' %}" class="footer-link">Cek Cuaca</a>
+      <a href="{% url 'peta_cuaca' %}" class="footer-link">Peta Cuaca</a>
+      <a href="{% url 'galeri_list' %}" class="footer-link">Galeri Komunitas</a>
+      <a href="{% url 'weather_highlights' %}" class="footer-link">Highlights</a>
+      <a href="{% url 'tips_list' %}" class="footer-link">Tips Cuaca</a>
+      <a href="{% url 'about_us' %}" class="footer-link">Tentang Kami</a>
+      <a href="{% url 'feedback' %}" class="footer-link">Feedback</a>
+    </div>
+    <div>
+      <p class="footer-title">Fitur</p>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:.45rem;">🌡️ Data Real-Time</p>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:.45rem;">🌍 200.000+ Kota</p>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:.45rem;">🤖 AI Rekomendasi</p>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:.45rem;">📸 Galeri Komunitas</p>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:.45rem;">💨 Kualitas Udara</p>
+    </div>
+    <div>
+      <p class="footer-title">Tim Kami</p>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:.4rem;">Kelompok Informatika</p>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:.4rem;">Universitas Muhammadiyah</p>
+      <p style="font-size:.9rem;color:#6FA8DC;font-weight:700;margin-bottom:.75rem;">Kalimantan Timur</p>
+      <p style="font-size:.8rem;color:#475569;">Proyek UAS 2026</p>
+    </div>
+  </div>
+  <hr class="footer-divider">
+  <div class="footer-bottom">
+    <p>© 2026 SkyWise AI Project • Informatika UMKT</p>
+    <p>Powered by <span style="color:#6FA8DC;">OpenWeatherMap API</span> & <span style="color:#a78bfa;">DeepSeek AI</span></p>
+  </div>
+</footer>
+{% endblock %}
+
+<script src="{% static 'js/skywise.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

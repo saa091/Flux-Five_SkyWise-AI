@@ -1,0 +1,41 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Kelola Admin/Staff — Dashboard SkyWise AI{% endblock %}
+{% block topbar_title %}Kelola Admin/Staff{% endblock %}
+{% block content %}
+<div class="d-card">
+  <div class="d-card-head"><span class="d-card-title">👥 Daftar Admin/Staff Terdaftar</span></div>
+  <div class="d-card-body" style="padding:0;overflow-x:auto;">
+    <table class="sw-table" style="min-width:600px;">
+      <thead><tr><th>Pengguna</th><th>Email</th><th>Role</th><th>Status</th><th>Bergabung</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,{% if u.is_staff %}#38bdf8,#0ea5e9{% else %}#a78bfa,#8b5cf6{% endif %});display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;color:#fff;">{{ u.username|first|upper }}</div>
+              <div>
+                <div style="font-weight:700;font-size:.875rem;">{{ u.get_full_name|default:u.username }}</div>
+                <div style="font-size:.72rem;color:#94a3b8;">@{{ u.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-size:.85rem;color:#64748b;">{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.is_superuser %}<span class="badge b-red">Superuser</span>
+            {% elif u.is_staff %}<span class="badge b-sky">Admin</span>
+            {% else %}<span class="badge b-gray">User</span>{% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}<span class="badge b-green">Aktif</span>
+            {% else %}<span class="badge b-red">Nonaktif</span>{% endif %}
+          </td>
+          <td style="font-size:.78rem;color:#94a3b8;">{{ u.date_joined|date:"d M Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Belum ada admin/staff.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

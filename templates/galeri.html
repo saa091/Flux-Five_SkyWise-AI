@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Galeri Cuaca Komunitas — SkyWise AI{% endblock %}
+
+{% block content %}
+<section style="background:linear-gradient(135deg,#5B8AAE 0%,#3E6B91 60%,#1F4E79 100%);padding:5rem 2rem 3rem;text-align:center;">
+  <p style="color:#6FA8DC;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem;">📸 Galeri Komunitas</p>
+  <h1 style="color:#fff;font-size:2.5rem;font-weight:800;margin-bottom:1rem;">Cuaca dari Seluruh <span style="color:#6FA8DC;">Nusantara</span></h1>
+  <p style="color:#94a3b8;font-size:1rem;max-width:540px;margin:0 auto 2rem;">Foto cuaca nyata yang dibagikan komunitas. Lihat bagaimana cuaca di berbagai kota, atau bagikan kondisi cuaca di daerahmu!</p>
+  <a href="{% url 'galeri_upload' %}" style="display:inline-flex;align-items:center;gap:8px;background:#6FA8DC;color:#0f172a;padding:.75rem 2rem;border-radius:50px;font-weight:700;text-decoration:none;font-size:.95rem;transition:all .2s;" onmouseover="this.style.background='#8FB8D9'" onmouseout="this.style.background='#6FA8DC'">
+    <i class="fa fa-camera"></i> Upload Foto Cuacamu
+  </a>
+</section>
+
+<section style="background:#f1f5f9;padding:2rem;min-height:60vh;">
+  <div style="max-width:1200px;margin:0 auto;">
+
+    <!-- Filter bar -->
+    <div style="background:#fff;border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:2rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%;">
+        <input type="text" name="kota" value="{{ kota_filter }}" placeholder="Cari kota..." style="flex:1;min-width:160px;padding:.6rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;outline:none;">
+        <select name="kondisi" style="padding:.6rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;background:#fff;outline:none;">
+          <option value="">Semua kondisi</option>
+          {% for k, v in kondisi_choices %}
+          <option value="{{ k }}" {% if kondisi_filter == k %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" style="padding:.6rem 1.5rem;background:#3E7CB1;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:.9rem;">
+          <i class="fa fa-search"></i> Filter
+        </button>
+        {% if kondisi_filter or kota_filter %}
+        <a href="{% url 'galeri_list' %}" style="padding:.6rem 1rem;color:#64748b;font-size:.85rem;text-decoration:none;">✕ Reset</a>
+        {% endif %}
+      </form>
+    </div>
+
+    {% if galeri %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem;">
+      {% for foto in galeri %}
+      <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07);transition:transform .2s,box-shadow .2s;cursor:pointer;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.12)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,0,0,.07)'" onclick="openModal('{{ foto.gambar.url }}','{{ foto.judul|escapejs }}','{{ foto.kota|escapejs }}','{{ foto.get_kondisi_cuaca_display|escapejs }}','{{ foto.deskripsi|escapejs }}','{{ foto.pengunggah_display|escapejs }}','{{ foto.dibuat|date:"d M Y" }}')">
+        <div style="height:220px;overflow:hidden;position:relative;">
+          <img src="{{ foto.gambar.url }}" alt="{{ foto.judul }}" style="width:100%;height:100%;object-fit:cover;transition:transform .4s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''">
+          <span style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,.55);color:#fff;padding:3px 10px;border-radius:20px;font-size:.75rem;backdrop-filter:blur(4px);">{{ foto.get_kondisi_cuaca_display }}</span>
+        </div>
+        <div style="padding:1rem 1.25rem;">
+          <h3 style="font-size:1rem;font-weight:700;color:#0f172a;margin-bottom:.25rem;">{{ foto.judul }}</h3>
+          <p style="font-size:.85rem;color:#64748b;margin-bottom:.5rem;"><i class="fa fa-location-dot" style="color:#6FA8DC;"></i> {{ foto.kota }}</p>
+          {% if foto.deskripsi %}
+          <p style="font-size:.82rem;color:#475569;line-height:1.5;margin-bottom:.5rem;">{{ foto.deskripsi|truncatechars:80 }}</p>
+          {% endif %}
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:.5rem;margin-top:.5rem;">
+            <span><i class="fa fa-user" style="margin-right:4px;"></i>{{ foto.pengunggah_display }}</span>
+            <span>{{ foto.dibuat|date:"d M Y" }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:5rem 2rem;">
+      <div style="font-size:4rem;margin-bottom:1rem;">📷</div>
+      <h3 style="color:#334155;font-size:1.3rem;margin-bottom:.5rem;">Belum ada foto</h3>
+      <p style="color:#64748b;margin-bottom:1.5rem;">{% if kondisi_filter or kota_filter %}Tidak ada foto yang cocok dengan filter. Coba ubah filter kamu.{% else %}Jadilah yang pertama berbagi foto cuaca dari daerahmu!{% endif %}</p>
+      <a href="{% url 'galeri_upload' %}" style="background:#3E7CB1;color:#fff;padding:.75rem 2rem;border-radius:50px;text-decoration:none;font-weight:700;">📸 Upload Sekarang</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Modal foto -->
+<div id="foto-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)closeModal()">
+  <div style="background:#fff;border-radius:20px;max-width:700px;width:100%;max-height:90vh;overflow:auto;position:relative;">
+    <button onclick="closeModal()" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1rem;z-index:1;">✕</button>
+    <img id="modal-img" src="" alt="" style="width:100%;border-radius:20px 20px 0 0;max-height:420px;object-fit:cover;">
+    <div style="padding:1.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
+        <h2 id="modal-judul" style="font-size:1.3rem;font-weight:800;color:#0f172a;"></h2>
+        <span id="modal-kondisi" style="background:#E6F0F7;color:#1F4E79;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:600;white-space:nowrap;margin-left:.5rem;"></span>
+      </div>
+      <p id="modal-kota" style="color:#3E7CB1;font-size:.9rem;margin-bottom:.5rem;"></p>
+      <p id="modal-desc" style="color:#475569;font-size:.9rem;line-height:1.6;margin-bottom:.75rem;"></p>
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:.75rem;">
+        <span id="modal-user"></span>
+        <span id="modal-date"></span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openModal(img,judul,kota,kondisi,desc,user,date){
+  document.getElementById('modal-img').src=img;
+  document.getElementById('modal-judul').textContent=judul;
+  document.getElementById('modal-kota').innerHTML='<i class="fa fa-location-dot"></i> '+kota;
+  document.getElementById('modal-kondisi').textContent=kondisi;
+  document.getElementById('modal-desc').textContent=desc||'Tidak ada deskripsi.';
+  document.getElementById('modal-user').innerHTML='<i class="fa fa-user"></i> '+user;
+  document.getElementById('modal-date').textContent=date;
+  document.getElementById('foto-modal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('foto-modal').style.display='none';
+  document.body.style.overflow='';
+}
+</script>
+{% endblock %}
