@@ -119,3 +119,176 @@
   .stats-grid{grid-template-columns:1fr}
   .topbar-title{font-size:.9rem}
 }
+
+/* ── Pastikan tidak ada overflow horizontal (akar masalah "belahan") ── */
+@media (max-width: 900px) {
+
+  /* Kunci utama: bodi dan wrapper tidak boleh melebar melebihi viewport */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  .dash-wrap {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* dash-main sudah margin-left:0 via rule lama,
+     pastikan tidak ada width stray yang menyebabkan geser */
+  .dash-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Topbar: jangan sampai melebar */
+  .topbar {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Konten dashboard */
+  .dash-content {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  /* ── Action bar: form wrap rapi di HP ── */
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action-bar form {
+    flex-direction: column !important;
+    width: 100%;
+  }
+
+  /* Search wrap full width di mobile */
+  .search-wrap {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  /* Filter select & tombol full width */
+  .filter-sel {
+    width: 100%;
+  }
+
+  .action-bar .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Tabel: scrollable horizontal, tidak menyebabkan page overflow ── */
+  /* Pembungkus overflow sudah ada (.d-card-body overflow-x:auto),
+     tapi perlu pastikan parent tidak meluber */
+  .d-card {
+    overflow: hidden; /* clip konten yang meluber */
+    width: 100%;
+  }
+
+  .d-card-body {
+    -webkit-overflow-scrolling: touch; /* scroll mulus di iOS */
+  }
+
+  /* Tabel min-width tetap (agar kolom terbaca), scroll di dalam card */
+  .sw-table {
+    font-size: .8rem;
+  }
+
+  .sw-table th,
+  .sw-table td {
+    padding: 9px 10px;
+  }
+
+  /* Kolom aksi: tombol lebih kecil */
+  .sw-table td .btn {
+    padding: 5px 9px;
+    font-size: .75rem;
+  }
+
+  /* ── Stats grid: 2 kolom di tablet ── */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Page header: stack di HP */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .page-header .btn {
+    align-self: flex-start;
+  }
+
+  /* Tips list header (judul + tombol Tambah) */
+  div[style*="justify-content:space-between"][style*="margin-bottom:20px"] {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* ── Layar HP kecil (≤ 480px) ── */
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .topbar-title {
+    font-size: .82rem;
+    /* Potong teks yang terlalu panjang */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Jam digital lebih kompak */
+  #live-clock {
+    font-size: .75rem;
+  }
+
+  /* Live clock wrapper */
+  .topbar > div[style*="live-clock"] {
+    padding: 5px 8px;
+    font-size: .75rem;
+  }
+
+  .dash-content {
+    padding: 12px;
+  }
+
+  /* Card head padding lebih kecil */
+  .d-card-head {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .d-card-title {
+    font-size: .82rem;
+  }
+
+  /* Stat card kompak */
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-val {
+    font-size: 1.6rem;
+  }
+
+  /* Badge tabel */
+  .badge {
+    font-size: .68rem;
+    padding: 2px 8px;
+  }
+}

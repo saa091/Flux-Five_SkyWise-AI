@@ -222,3 +222,133 @@ textarea.form-control{resize:vertical;min-height:100px}
 .t-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
 .t-info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
 @keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── Search bar cek cuaca: tombol Cari tidak terpotong ─────── */
+@media (max-width: 600px) {
+  /* Bungkus searchbar jadi dua baris:
+     baris 1 = ikon + input, baris 2 = tombol Cari full-width */
+  .wx-searchbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  /* Ikon + input tetap di baris pertama, isi sisa lebar */
+  .wx-search-icon {
+    flex-shrink: 0;
+  }
+
+  .wx-ac-wrap {
+    flex: 1;
+    min-width: 0; /* cegah overflow */
+  }
+
+  /* Tombol Cari turun ke baris bawah, lebarnya full */
+  .wx-search-btn {
+    width: 100%;
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-size: .95rem;
+    justify-content: center;
+    order: 99; /* pastikan selalu paling bawah */
+  }
+
+  /* Autocomplete list sesuaikan agar tidak keluar layar */
+  #wx-ac-list {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 220px;
+  }
+
+  /* Search zone padding lebih ramping */
+  .wx-search-zone {
+    padding: 1.8rem 1rem 0;
+  }
+
+  .wx-headline {
+    font-size: 1.7rem;
+  }
+
+  .wx-subline {
+    font-size: .85rem;
+    margin-bottom: 1.2rem;
+  }
+
+  /* History chips tidak overflow */
+  .wx-history {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Preview stats baris bawah: 2 kolom */
+  .wx-preview-stats-row {
+    gap: 8px;
+  }
+
+  .wx-preview-stat {
+    min-width: calc(50% - 8px);
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  /* Main weather layout: hapus padding berlebih */
+  .wx-main {
+    padding: 0 .85rem;
+    margin-top: 1.2rem;
+    margin-bottom: 3rem;
+  }
+
+  /* Hero card lebih compact */
+  .wx-hero-card {
+    padding: 1.3rem 1.1rem;
+  }
+
+  .wx-temp-num {
+    font-size: 3.5rem;
+  }
+
+  .wx-temp-icon {
+    width: 76px;
+    height: 76px;
+  }
+
+  /* Stats grid: 2 kolom di HP kecil */
+  .wx-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* AQI komponen: 2 kolom */
+  .wx-aqi-components {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Map promo: stack vertikal */
+  .wx-map-promo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .85rem;
+  }
+
+  .wx-map-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Footer: satu kolom */
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .footer {
+    padding: 2.5rem 1.1rem 1.2rem;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+    gap: .5rem;
+  }
+}
