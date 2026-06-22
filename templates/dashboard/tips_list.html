@@ -32,14 +32,14 @@
       <tbody>
         {% for tip in tips %}
         <tr>
-          <td>
+          <td data-label="Judul">
             <div style="font-weight:700;font-size:.875rem;">{{ tip.judul }}</div>
             <div style="font-size:.75rem;color:#94a3b8;">{{ tip.isi|striptags|truncatechars:60 }}</div>
           </td>
-          <td><span class="badge b-sky">{{ tip.kategori.nama }}</span></td>
-          <td style="font-size:.85rem;color:#64748b;">{{ tip.penulis.username }}</td>
-          <td style="font-size:.78rem;color:#94a3b8;">{{ tip.dibuat|date:"d M Y" }}</td>
-          <td>
+          <td data-label="Kategori"><span class="badge b-sky">{{ tip.kategori.nama }}</span></td>
+          <td data-label="Penulis" style="font-size:.85rem;color:#64748b;">{{ tip.penulis.username }}</td>
+          <td data-label="Dibuat" style="font-size:.78rem;color:#94a3b8;">{{ tip.dibuat|date:"d M Y" }}</td>
+          <td data-label="Aksi">
             <div style="display:flex;gap:6px;">
               <a href="{% url 'tips_detail' tip.pk %}" class="btn btn-sm" style="background:#f1f5f9;border-radius:8px;"><i class="fa fa-eye"></i></a>
               <a href="{% url 'tips_edit' tip.pk %}" class="btn btn-outline btn-sm" style="border-radius:8px;"><i class="fa fa-pen"></i></a>

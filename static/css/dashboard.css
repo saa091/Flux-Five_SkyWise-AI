@@ -120,6 +120,12 @@
   .topbar-title{font-size:.9rem}
 }
 
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE PATCH — Admin Dashboard
+   Semua rule di bawah HANYA aktif di layar ≤ 900px (HP/tablet).
+   Tampilan desktop/laptop TIDAK berubah sama sekali.
+   ══════════════════════════════════════════════════════════════ */
+
 /* ── Pastikan tidak ada overflow horizontal (akar masalah "belahan") ── */
 @media (max-width: 900px) {
 
@@ -291,4 +297,46 @@
     font-size: .68rem;
     padding: 2px 8px;
   }
+}
+
+/* ── Tabel jadi card-stack di HP (≤640px) ── */
+@media (max-width: 640px) {
+  .sw-table thead { display: none; }
+
+  .sw-table, .sw-table tbody, .sw-table tr, .sw-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .sw-table tr {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    background: #fff;
+  }
+
+  .sw-table td {
+    border-bottom: none;
+    padding: 6px 0;
+  }
+
+  /* Label kecil sebelum tiap value */
+  .sw-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: .65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 2px;
+  }
+
+  .sw-table td:last-child {
+    padding-top: 10px;
+    border-top: 1px dashed #f1f5f9;
+    margin-top: 4px;
+  }
+
+  .sw-table[style*="min-width"] { min-width: 0 !important; }
 }

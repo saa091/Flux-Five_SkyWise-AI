@@ -719,6 +719,18 @@
   .wx-headline { font-size: 1.8rem; }
   .wx-cond-card { grid-template-columns: 1fr; }
   .wx-hero-split { grid-template-columns: 1fr; }
+
+  /* ── Fix: sunset tag numpuk sama minmax badge ── */
+  .wx-hero-card {
+    padding-bottom: 1.5rem;
+  }
+  .wx-hero-sunset-tag {
+    position: static;
+    text-align: left;
+    margin-top: 1rem;
+    padding-top: .9rem;
+    border-top: 1px solid rgba(255,255,255,.15);
+  }
 }
 @media(max-width:480px) {
   .wx-stats-grid { grid-template-columns: 1fr 1fr; }
