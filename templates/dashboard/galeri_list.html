@@ -4,34 +4,18 @@
 {% block content %}
 
 <style>
-  .gal-filter {
-    padding: .5rem 1rem;
-    border-radius: 8px;
-    font-size: .85rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all .15s;
-  }
-  .gal-filter.active-all { background: #0ea5e9; color: #fff; }
-  .gal-filter.active-pending { background: #f59e0b; color: #fff; }
-  .gal-filter.active-approved { background: #10b981; color: #fff; }
-  .gal-filter.inactive { background: #f1f5f9; color: #64748b; }
-  .gal-filter.inactive:hover { background: #e2e8f0; }
-
   .gal-card {
     background: #fff;
     border-radius: 14px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    border: 1px solid #e2e8f0;
     transition: box-shadow .2s, transform .2s;
   }
   .gal-card:hover {
     box-shadow: 0 8px 20px rgba(0,0,0,.09);
     transform: translateY(-2px);
   }
-  .gal-card.pending { border: 2px solid #fcd34d; }
-  .gal-card.approved { border: 1px solid #e2e8f0; }
-
   .gal-btn {
     flex: 1;
     text-align: center;
@@ -45,8 +29,6 @@
     transition: opacity .2s;
   }
   .gal-btn:hover { opacity: .85; }
-  .gal-btn-approve { background: #10b981; color: #fff; }
-  .gal-btn-reject { background: #ef4444; color: #fff; }
   .gal-btn-view { background: #e0f2fe; color: #0369a1; }
   .gal-btn-delete { background: #fce7f3; color: #9d174d; }
 </style>
@@ -54,54 +36,44 @@
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
   <div>
     <h1 style="font-size:1.4rem;font-weight:800;color:#0f172a;margin:0;">📸 Kelola Galeri</h1>
-    {% if pending_count > 0 %}
-    <span style="background:#fef3c7;color:#92400e;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:600;margin-top:.25rem;display:inline-block;">{{ pending_count }} menunggu persetujuan</span>
-    {% endif %}
+    <p style="font-size:.85rem;color:#64748b;margin:.25rem 0 0;">Semua foto langsung tampil — admin dapat menghapus foto yang tidak sesuai.</p>
   </div>
-  <div style="display:flex;gap:8px;">
-    <a href="?status=semua" class="gal-filter {% if filter_status == 'semua' %}active-all{% else %}inactive{% endif %}">Semua</a>
-    <a href="?status=pending" class="gal-filter {% if filter_status == 'pending' %}active-pending{% else %}inactive{% endif %}">Pending</a>
-    <a href="?status=approved" class="gal-filter {% if filter_status == 'approved' %}active-approved{% else %}inactive{% endif %}">Disetujui</a>
-  </div>
+  <span style="background:#dcfce7;color:#166534;padding:.4rem 1rem;border-radius:20px;font-size:.82rem;font-weight:600;">
+    ✓ {{ galeri|length }} foto aktif
+  </span>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;">
   {% for foto in galeri %}
-  <div class="gal-card {% if not foto.disetujui %}pending{% else %}approved{% endif %}">
-    <div style="height:160px;overflow:hidden;position:relative;">
+  <div class="gal-card">
+    <div style="height:160px;overflow:hidden;">
       <img src="{{ foto.gambar.url }}" alt="{{ foto.judul }}" style="width:100%;height:100%;object-fit:cover;">
-      {% if not foto.disetujui %}
-      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;">
-        <span style="background:#f59e0b;color:#fff;padding:6px 16px;border-radius:20px;font-weight:700;font-size:.85rem;">⏳ Pending</span>
-      </div>
-      {% endif %}
     </div>
     <div style="padding:1rem;">
       <p style="font-weight:700;color:#0f172a;font-size:.95rem;margin:0 0 .25rem;">{{ foto.judul|truncatechars:40 }}</p>
-      <p style="font-size:.8rem;color:#64748b;margin:0 0 .25rem;"><i class="fa fa-location-dot" style="color:#38bdf8;"></i> {{ foto.kota }} · {{ foto.get_kondisi_cuaca_display }}</p>
-      <p style="font-size:.78rem;color:#94a3b8;margin:0 0 .75rem;">Oleh: {{ foto.pengunggah_display }} · {{ foto.dibuat|date:"d M Y" }}</p>
+      <p style="font-size:.8rem;color:#64748b;margin:0 0 .25rem;">
+        <i class="fa fa-location-dot" style="color:#38bdf8;"></i> {{ foto.kota }} · {{ foto.get_kondisi_cuaca_display }}
+      </p>
+      <p style="font-size:.78rem;color:#94a3b8;margin:0 0 .75rem;">
+        Oleh: {{ foto.pengunggah_display }} · {{ foto.dibuat|date:"d M Y" }}
+      </p>
       <div style="display:flex;gap:6px;">
-        {% if not foto.disetujui %}
-        <a href="{% url 'galeri_approve' foto.pk %}" class="gal-btn gal-btn-approve">✓ Setujui</a>
-        <a href="{% url 'galeri_reject' foto.pk %}" class="gal-btn gal-btn-reject" onclick="return confirm('Tolak dan hapus foto ini?')">✕ Tolak</a>
-        {% else %}
-        <a href="{% url 'galeri_list' %}" target="_blank" class="gal-btn gal-btn-view"><i class="fa fa-eye"></i> Lihat</a>
-        <a href="{% url 'galeri_delete_admin' foto.pk %}" class="gal-btn gal-btn-delete" onclick="return confirm('Hapus foto ini?')"><i class="fa fa-trash"></i> Hapus</a>
-        {% endif %}
+        <a href="{% url 'galeri_list' %}" target="_blank" class="gal-btn gal-btn-view">
+          <i class="fa fa-eye"></i> Lihat
+        </a>
+        <a href="{% url 'galeri_delete_admin' foto.pk %}" class="gal-btn gal-btn-delete"
+          onclick="return confirm('Hapus foto ini permanen?')">
+          <i class="fa fa-trash"></i> Hapus
+        </a>
       </div>
     </div>
   </div>
   {% empty %}
   <div style="grid-column:1/-1;text-align:center;padding:4rem;color:#94a3b8;">
     <div style="font-size:3rem;margin-bottom:.75rem;">📷</div>
-    {% if filter_status == 'pending' %}
-      <p>Tidak ada foto yang menunggu persetujuan saat ini.</p>
-    {% elif filter_status == 'approved' %}
-      <p>Belum ada foto yang disetujui.</p>
-    {% else %}
-      <p>Belum ada foto di galeri.</p>
-    {% endif %}
+    <p>Belum ada foto di galeri.</p>
   </div>
   {% endfor %}
 </div>
+
 {% endblock %}

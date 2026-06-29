@@ -1,41 +1,123 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% block title %}Kelola Admin/Staff — Dashboard SkyWise AI{% endblock %}
-{% block topbar_title %}Kelola Admin/Staff{% endblock %}
+{% block title %}Kelola Pengguna — Dashboard SkyWise AI{% endblock %}
+{% block topbar_title %}Kelola Pengguna{% endblock %}
 {% block content %}
-<div class="d-card">
-  <div class="d-card-head"><span class="d-card-title">👥 Daftar Admin/Staff Terdaftar</span></div>
-  <div class="d-card-body" style="padding:0;overflow-x:auto;">
-    <table class="sw-table" style="min-width:600px;">
-      <thead><tr><th>Pengguna</th><th>Email</th><th>Role</th><th>Status</th><th>Bergabung</th></tr></thead>
-      <tbody>
-        {% for u in users %}
-        <tr>
-          <td>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,{% if u.is_staff %}#38bdf8,#0ea5e9{% else %}#a78bfa,#8b5cf6{% endif %});display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;color:#fff;">{{ u.username|first|upper }}</div>
-              <div>
-                <div style="font-weight:700;font-size:.875rem;">{{ u.get_full_name|default:u.username }}</div>
-                <div style="font-size:.72rem;color:#94a3b8;">@{{ u.username }}</div>
+
+<!-- Tab Navigation -->
+<div style="display:flex;gap:8px;margin-bottom:1.5rem;">
+  <button onclick="switchTab('pengguna')" id="tab-pengguna"
+    style="padding:.55rem 1.25rem;border-radius:10px;font-size:.85rem;font-weight:700;border:none;cursor:pointer;background:#6366f1;color:#fff;transition:all .2s;">
+    👤 Pengguna <span id="count-pengguna" style="background:rgba(255,255,255,.25);padding:1px 8px;border-radius:12px;font-size:.75rem;margin-left:4px;">{{ users|length }}</span>
+  </button>
+  <button onclick="switchTab('staff')" id="tab-staff"
+    style="padding:.55rem 1.25rem;border-radius:10px;font-size:.85rem;font-weight:700;border:none;cursor:pointer;background:#f1f5f9;color:#64748b;transition:all .2s;">
+    🛡️ Admin/Staff <span id="count-staff" style="background:rgba(0,0,0,.08);padding:1px 8px;border-radius:12px;font-size:.75rem;margin-left:4px;">{{ staff|length }}</span>
+  </button>
+</div>
+
+<!-- Tab: Pengguna -->
+<div id="panel-pengguna">
+  <div class="d-card">
+    <div class="d-card-head">
+      <span class="d-card-title">👤 Daftar Pengguna Terdaftar</span>
+      <span style="font-size:.82rem;color:#64748b;">Login via Google atau email</span>
+    </div>
+    <div class="d-card-body" style="padding:0;overflow-x:auto;">
+      <table class="sw-table" style="min-width:600px;">
+        <thead>
+          <tr><th>Pengguna</th><th>Email</th><th>Status</th><th>Bergabung</th></tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;color:#fff;">
+                  {{ u.username|first|upper }}
+                </div>
+                <div>
+                  <div style="font-weight:700;font-size:.875rem;">{{ u.get_full_name|default:u.username }}</div>
+                  <div style="font-size:.72rem;color:#94a3b8;">@{{ u.username }}</div>
+                </div>
               </div>
-            </div>
-          </td>
-          <td style="font-size:.85rem;color:#64748b;">{{ u.email|default:"—" }}</td>
-          <td>
-            {% if u.is_superuser %}<span class="badge b-red">Superuser</span>
-            {% elif u.is_staff %}<span class="badge b-sky">Admin</span>
-            {% else %}<span class="badge b-gray">User</span>{% endif %}
-          </td>
-          <td>
-            {% if u.is_active %}<span class="badge b-green">Aktif</span>
-            {% else %}<span class="badge b-red">Nonaktif</span>{% endif %}
-          </td>
-          <td style="font-size:.78rem;color:#94a3b8;">{{ u.date_joined|date:"d M Y" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Belum ada admin/staff.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+            </td>
+            <td style="font-size:.85rem;color:#64748b;">{{ u.email|default:"—" }}</td>
+            <td>
+              {% if u.is_active %}<span class="badge b-green">Aktif</span>
+              {% else %}<span class="badge b-red">Nonaktif</span>{% endif %}
+            </td>
+            <td style="font-size:.78rem;color:#94a3b8;">{{ u.date_joined|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:2rem;">Belum ada pengguna terdaftar.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
+
+<!-- Tab: Admin/Staff -->
+<div id="panel-staff" style="display:none;">
+  <div class="d-card">
+    <div class="d-card-head">
+      <span class="d-card-title">🛡️ Daftar Admin/Staff</span>
+      <span style="font-size:.82rem;color:#64748b;">Diatur melalui Django Admin</span>
+    </div>
+    <div class="d-card-body" style="padding:0;overflow-x:auto;">
+      <table class="sw-table" style="min-width:600px;">
+        <thead>
+          <tr><th>Pengguna</th><th>Email</th><th>Role</th><th>Status</th><th>Bergabung</th></tr>
+        </thead>
+        <tbody>
+          {% for u in staff %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;color:#fff;">
+                  {{ u.username|first|upper }}
+                </div>
+                <div>
+                  <div style="font-weight:700;font-size:.875rem;">{{ u.get_full_name|default:u.username }}</div>
+                  <div style="font-size:.72rem;color:#94a3b8;">@{{ u.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:.85rem;color:#64748b;">{{ u.email|default:"—" }}</td>
+            <td>
+              {% if u.is_superuser %}<span class="badge b-red">Superuser</span>
+              {% else %}<span class="badge b-sky">Admin</span>{% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}<span class="badge b-green">Aktif</span>
+              {% else %}<span class="badge b-red">Nonaktif</span>{% endif %}
+            </td>
+            <td style="font-size:.78rem;color:#94a3b8;">{{ u.date_joined|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Belum ada admin/staff.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  const panels = ['pengguna', 'staff'];
+  panels.forEach(t => {
+    document.getElementById('panel-' + t).style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById('tab-' + t);
+    if (t === tab) {
+      btn.style.background = t === 'pengguna' ? '#6366f1' : '#0ea5e9';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = '#f1f5f9';
+      btn.style.color = '#64748b';
+    }
+  });
+}
+</script>
+
 {% endblock %}

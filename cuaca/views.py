@@ -192,7 +192,7 @@ OSM_CITY_TYPES = {
     'district', 'province',
 }
 
-
+@login_required
 def index(request):
     tips_terbaru  = TipsCuaca.objects.all().order_by('-dibuat')[:3]
     galeri_terbaru = Galeri.objects.filter(disetujui=True).order_by('-dibuat')[:6]
@@ -334,7 +334,7 @@ def _search_owm_by_name(kota, API, expected_country=None):
 
     return None, 'subcity', lat_nom, lon_nom
 
-
+@login_required
 def cek_cuaca(request):
     cuaca = None; forecast = None; hourly = None
     air_quality = None; error = None; rekomendasi_ai = None
@@ -513,6 +513,7 @@ def cek_cuaca(request):
     })
 
 
+@login_required
 def galeri_list(request):
     kondisi_filter = request.GET.get('kondisi','')
     kota_filter    = request.GET.get('kota','').strip()
@@ -529,6 +530,7 @@ def galeri_list(request):
     })
 
 
+@login_required
 def galeri_upload(request):
     kondisi_choices = Galeri.KONDISI_CHOICES
     kategori_list   = Kategori.objects.all()
@@ -538,27 +540,25 @@ def galeri_upload(request):
         kondisi   = request.POST.get('kondisi_cuaca','lainnya')
         deskripsi = request.POST.get('deskripsi','').strip()
         gambar    = request.FILES.get('gambar')
-        nama_input = request.POST.get('nama_pengunggah','').strip()
         if not judul or not kota or not gambar:
             messages.error(request,'Judul, kota, dan foto wajib diisi!')
         else:
             obj = Galeri(
                 judul=judul, kota=kota, kondisi_cuaca=kondisi,
-                deskripsi=deskripsi, gambar=gambar, disetujui=False,
+                deskripsi=deskripsi, gambar=gambar,
+                disetujui=True,  # ← langsung tampil, tidak perlu verifikasi admin
+                diunggah_oleh=request.user,
+                nama_pengunggah=request.user.get_full_name() or request.user.username,
             )
-            if request.user.is_authenticated:
-                obj.diunggah_oleh = request.user
-                obj.nama_pengunggah = request.user.get_full_name() or request.user.username
-            else:
-                obj.nama_pengunggah = nama_input or 'Anonim'
             obj.save()
-            messages.success(request,'Foto berhasil dikirim! Menunggu persetujuan admin.')
+            messages.success(request,'Foto berhasil diunggah dan langsung tampil di galeri! 🎉')
             return redirect('galeri_list')
     return render(request,'galeri_upload.html',{
         'kondisi_choices':kondisi_choices,'kategori_list':kategori_list,
     })
 
 
+@login_required
 def weather_highlights(request):
     kategori_id  = request.GET.get('kategori','')
     tips_list    = TipsCuaca.objects.all().order_by('-dibuat')
@@ -578,32 +578,41 @@ def weather_highlights(request):
     })
 
 
+@login_required
 def about_us(request):
     return render(request,'about_us.html')
 
 
+@login_required
 def feedback(request):
     feedbacks = Feedback.objects.all().order_by('-dibuat')
     if request.method == 'POST':
-        nama       = request.POST.get('nama','').strip()
         pesan      = request.POST.get('pesan','').strip()
         rating     = request.POST.get('rating','0')
         pengalaman = request.POST.get('pengalaman','')
-        if not nama or not pesan or not rating or rating=='0':
-            messages.error(request,'Harap isi semua field termasuk rating bintang!')
+        # Nama otomatis dari user yang sedang login
+        nama = request.user.get_full_name() or request.user.username
+        if not pesan or not rating or rating=='0':
+            messages.error(request,'Harap isi pesan dan rating bintang!')
         else:
-            fb = Feedback.objects.create(nama=nama,pesan=pesan,rating=int(rating),pengalaman=pengalaman)
-            return render(request,'feedback.html',{'sukses':True,'feedback_baru':fb,'feedbacks':Feedback.objects.all().order_by('-dibuat')})
+            fb = Feedback.objects.create(
+                nama=nama, pesan=pesan,
+                rating=int(rating), pengalaman=pengalaman
+            )
+            return render(request,'feedback.html',{
+                'sukses':True,'feedback_baru':fb,
+                'feedbacks':Feedback.objects.all().order_by('-dibuat')
+            })
     return render(request,'feedback.html',{'feedbacks':feedbacks})
 
-
+@login_required
 def tips_list_view(request):
     kategori_list = Kategori.objects.all()
     kategori_id   = request.GET.get('kategori')
     tips = TipsCuaca.objects.filter(kategori_id=kategori_id).order_by('-dibuat') if kategori_id else TipsCuaca.objects.all().order_by('-dibuat')
     return render(request,'tips_list.html',{'tips':tips,'kategori_list':kategori_list,'kategori_aktif':kategori_id})
 
-
+@login_required
 def tips_detail(request, pk):
     tips = get_object_or_404(TipsCuaca, pk=pk)
     return render(request,'tips_detail.html',{'tips':tips})
@@ -750,8 +759,12 @@ def feedback_balas(request, pk):
 @login_required
 @user_passes_test(is_admin)
 def users_dashboard(request):
-    users=User.objects.all().order_by('-date_joined')
-    return render(request,'dashboard/users_list.html',{'users':users})
+    users = User.objects.filter(is_staff=False).order_by('-date_joined')
+    staff = User.objects.filter(is_staff=True).order_by('-date_joined')
+    return render(request, 'dashboard/users_list.html', {
+        'users': users,
+        'staff': staff,
+    })
 
 
 @login_required
@@ -846,13 +859,13 @@ def galeri_delete_admin(request, pk):
     messages.success(request,'Foto berhasil dihapus!')
     return redirect('galeri_dashboard')
 
-
+@login_required
 def peta_cuaca(request):
     return render(request, 'peta_cuaca.html', {
         'OPENWEATHER_API_KEY': settings.OPENWEATHER_API_KEY,
     })
 
-
+@login_required
 def api_cuaca_lokasi(request):
     lat = request.GET.get('lat')
     lon = request.GET.get('lon')
@@ -926,7 +939,7 @@ def api_cuaca_lokasi(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-
+@login_required
 def api_autocomplete_kota(request):
     """
     Endpoint autocomplete — Nominatim (OSM).
@@ -1050,6 +1063,7 @@ def api_autocomplete_kota(request):
     
 import re
 
+@login_required
 def api_rekomendasi_ai(request):
     kota = request.GET.get('kota', '').strip()
     suhu = request.GET.get('suhu', '0')
@@ -1257,6 +1271,7 @@ def api_rekomendasi_ai(request):
 
         return JsonResponse({'result': {'aktivitas': akt, 'tips_pakaian': tips}})
 
+@login_required
 def api_geocode(request):
     q = request.GET.get('q', '').strip()
     if not q:
